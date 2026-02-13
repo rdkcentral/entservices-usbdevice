@@ -138,7 +138,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-usbdevice
           path: entservices-usbdevice
-          ref: develop
+          ref: topic/RDKEMW-13481
 
       - name: Checkout googletest
         if: steps.cache.outputs.cache-hit != 'true'
@@ -737,7 +737,7 @@ jobs:
         if: ${{ !env.ACT }}
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts-L1-infra
+          name: artifacts-L1-USBDevice
           path: |
             coverage/
             valgrind_log
