@@ -88,18 +88,18 @@ jobs:
           path: ThunderTools
           ref: R4.4.3
 
-      - name: Checkout entservices-infra
+      - name: Checkout entservices-usbdevice
         if: ${{ inputs.caller_source == 'local' }}
         uses: actions/checkout@v3
         with:
-          path: entservices-infra
+          path: entservices-usbdevice
 
-      - name: Checkout entservices-infra-testframework
+      - name: Checkout entservices-usbdevice-testframework
         if: ${{ inputs.caller_source == 'testframework' }}
         uses: actions/checkout@v3
         with:
-          repository: rdkcentral/entservices-infra
-          path: entservices-infra
+          repository: rdkcentral/entservices-usbdevice
+          path: entservices-usbdevice
           ref: develop
 
       - name: Checkout entservices-deviceanddisplay
@@ -134,8 +134,8 @@ jobs:
           git remote add origin https://code.rdkcentral.com/r/components/opensource/westeros
           git config core.sparseCheckout true
           git pull --depth=1 origin master
-          mkdir -p $GITHUB_WORKSPACE/entservices-infra/ResourceManager
-          cp essos/essos-resmgr.h $GITHUB_WORKSPACE/entservices-infra/ResourceManager/
+          mkdir -p $GITHUB_WORKSPACE/entservices-usbdevice/ResourceManager
+          cp essos/essos-resmgr.h $GITHUB_WORKSPACE/entservices-usbdevice/ResourceManager/
 
       - name: Apply patches ThunderTools
         run: |  
@@ -415,11 +415,11 @@ jobs:
           &&
           cmake --install build/entservices-deviceanddisplay
 
-      - name: Build entservices-infra
+      - name: Build entservices-usbdevice
         run: >
           cmake
-          -S "$GITHUB_WORKSPACE/entservices-infra"
-          -B build/entservices-infra
+          -S "$GITHUB_WORKSPACE/entservices-usbdevice"
+          -B build/entservices-usbdevice
           -DCMAKE_TOOLCHAIN_FILE="${{ env.TOOLCHAIN_FILE }}"
           -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr"
           -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake"
@@ -513,9 +513,9 @@ jobs:
           -DDS_FOUND=ON
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           &&
-          cmake --build build/entservices-infra -j6
+          cmake --build build/entservices-usbdevice -j6
           &&
-          cmake --install build/entservices-infra
+          cmake --install build/entservices-usbdevice
 
       - name: Build entservices-testframework
         run: >
@@ -734,12 +734,12 @@ jobs:
           &&
           lcov -c
           -o coverage.info
-          -d build/entservices-infra
+          -d build/entservices-usbdevice
           &&
           lcov
           -r coverage.info
           '/usr/include/*'
-          '*/build/entservices-infra/_deps/*'
+          '*/build/entservices-usbdevice/_deps/*'
           '*/build/entservices-deviceanddisplay/_deps/*'
           '*/build/entservices-entservices-testframework/_deps/*'
           '*/install/usr/include/*'
@@ -754,14 +754,14 @@ jobs:
           &&
           genhtml
           -o coverage
-          -t "entservices-infra coverage"
+          -t "entservices-usbdevice coverage"
           filtered_coverage.info
 
       - name: Upload artifacts
         if: ${{ !env.ACT }}
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts-L2-infra
+          name: artifacts-L2-USBDevice
           path: |
             coverage/
             valgrind_log

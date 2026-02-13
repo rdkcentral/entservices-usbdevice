@@ -126,18 +126,18 @@ jobs:
           ref: develop
           token: ${{ secrets.RDKCM_RDKE }}
 
-      - name: Checkout entservices-infra
+      - name: Checkout entservices-usbdevice
         if: ${{ inputs.caller_source == 'local' }}
         uses: actions/checkout@v3
         with:
-          path: entservices-infra
+          path: entservices-usbdevice
 
-      - name: Checkout entservices-infra-testframework
+      - name: Checkout entservices-usbdevice-testframework
         if: ${{ inputs.caller_source == 'testframework' }}
         uses: actions/checkout@v3
         with:
-          repository: rdkcentral/entservices-infra
-          path: entservices-infra
+          repository: rdkcentral/entservices-usbdevice
+          path: entservices-usbdevice
           ref: develop
 
       - name: Checkout googletest
@@ -157,8 +157,8 @@ jobs:
           git remote add origin https://code.rdkcentral.com/r/components/opensource/westeros
           git config core.sparseCheckout true
           git pull --depth=1 origin master
-          mkdir -p $GITHUB_WORKSPACE/entservices-infra/ResourceManager
-          cp essos/essos-resmgr.h $GITHUB_WORKSPACE/entservices-infra/ResourceManager/
+          mkdir -p $GITHUB_WORKSPACE/entservices-usbdevice/ResourceManager
+          cp essos/essos-resmgr.h $GITHUB_WORKSPACE/entservices-usbdevice/ResourceManager/
 
       - name: Apply patches ThunderTools
         run: |  
@@ -373,7 +373,7 @@ jobs:
           -I $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/ccec/drivers
           -I $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/network
           -I $GITHUB_WORKSPACE/entservices-testframework/Tests
-          -I $GITHUB_WORKSPACE/entservices-infra/helpers
+          -I $GITHUB_WORKSPACE/entservices-usbdevice/helpers
           -I $GITHUB_WORKSPACE/Thunder/Source
           -I $GITHUB_WORKSPACE/Thunder/Source/core
           -I $GITHUB_WORKSPACE/install/usr/include
@@ -409,11 +409,11 @@ jobs:
           &&
           cmake --install build/mocks
 
-      - name: Build entservices-infra
+      - name: Build entservices-usbdevice
         run: >
           cmake -G Ninja
-          -S "$GITHUB_WORKSPACE/entservices-infra"
-          -B build/entservices-infra
+          -S "$GITHUB_WORKSPACE/entservices-usbdevice"
+          -B build/entservices-usbdevice
           -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr"
           -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake"
           -DCMAKE_CXX_FLAGS="
@@ -503,9 +503,9 @@ jobs:
           -DPLUGIN_PACKAGE_MANAGER=ON
           -DENABLE_UNIT_TESTS=ON
           &&
-          cmake --build build/entservices-infra -j8
+          cmake --build build/entservices-usbdevice -j8
           &&
-          cmake --install build/entservices-infra
+          cmake --install build/entservices-usbdevice
 
       - name: Build entservices-testframework
         run: >
@@ -530,7 +530,7 @@ jobs:
           -I $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal
           -I $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/ccec/drivers
           -I $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/network
-          -I $GITHUB_WORKSPACE/entservices-infra/helpers
+          -I $GITHUB_WORKSPACE/entservices-usbdevice/helpers
           -I $GITHUB_WORKSPACE/entservices-testframework/Tests
           -I $GITHUB_WORKSPACE/Thunder/Source
           -I $GITHUB_WORKSPACE/Thunder/Source/core
@@ -715,12 +715,12 @@ jobs:
           &&
           lcov -c
           -o coverage.info
-          -d build/entservices-infra
+          -d build/entservices-usbdevice
           &&
           lcov
           -r coverage.info
           '/usr/include/*'
-          '*/build/entservices-infra/_deps/*'
+          '*/build/entservices-usbdevice/_deps/*'
           '*/install/usr/include/*'
           '*/Tests/headers/*'
           '*/Tests/mocks/*'
@@ -730,7 +730,7 @@ jobs:
           &&
           genhtml
           -o coverage
-          -t "entservices-infra coverage"
+          -t "entservices-usbdevice coverage"
           filtered_coverage.info
 
       - name: Upload artifacts

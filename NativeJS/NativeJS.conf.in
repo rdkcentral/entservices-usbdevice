@@ -1,8 +1,0 @@
-autostart = "false"
-precondition = ["Graphics"]
-callsign = "org.rdk.jsruntime"
-configuration = JSON()
-root = JSON()
-root.add("mode", "Local")
-configuration.add("root", root)
-configuration.add("clientidentifier", "test")
