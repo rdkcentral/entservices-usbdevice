@@ -9,7 +9,7 @@
       {
         "name": "entservices-testframework",
         "repo": "https://github.com/rdkcentral/entservices-testframework.git",
-        "branch": "main",
+        "branch": "develop",
         "header_paths": [
           { "source": "Tests/headers", "destination": "$HOME/usr/include/rdkb/testframework" },
           { "source": "Tests/mocks", "destination": "$HOME/usr/include/rdkb/testframework" }
