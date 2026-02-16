@@ -19,25 +19,10 @@ jobs:
 
       - name: native build
         run: |
-          # Trust the workspace
           git config --global --add safe.directory '*'
-          # Pull the latest changes for the native build system
           git submodule update --init --recursive --remote
-          # Clone entservices-testframework (requires token) - needed first for patches
-          mkdir -p $HOME/build
-          git clone --branch main https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git $HOME/build/entservices-testframework
-          # Copy testframework headers and mocks
-          mkdir -p $HOME/usr/include/rdkb/testframework
-          if [ -d "$HOME/build/entservices-testframework/Tests/headers" ]; then
-            cp -R $HOME/build/entservices-testframework/Tests/headers $HOME/usr/include/rdkb/testframework/
-          fi
-          if [ -d "$HOME/build/entservices-testframework/Tests/mocks" ]; then
-            cp -R $HOME/build/entservices-testframework/Tests/mocks $HOME/usr/include/rdkb/testframework/
-          fi
-          # Build and install dependencies (will apply patches from entservices-testframework)
           chmod +x build_tools_workflows/cov_docker_script/setup_dependencies.sh
           ./build_tools_workflows/cov_docker_script/setup_dependencies.sh ./cov_docker_script/component_config.json
-          # Build component
           chmod +x build_tools_workflows/cov_docker_script/build_native.sh
           ./build_tools_workflows/cov_docker_script/build_native.sh ./cov_docker_script/component_config.json "$(pwd)"
         env:

@@ -7,6 +7,15 @@
     "_comment": "External repositories needed by this component",
     "repos": [
       {
+        "name": "entservices-testframework",
+        "repo": "https://github.com/rdkcentral/entservices-testframework.git",
+        "branch": "main",
+        "header_paths": [
+          { "source": "Tests/headers", "destination": "$HOME/usr/include/rdkb/testframework" },
+          { "source": "Tests/mocks", "destination": "$HOME/usr/include/rdkb/testframework" }
+        ]
+      },
+      {
         "name": "trower-base64",
         "repo": "https://github.com/xmidt-org/trower-base64.git",
         "branch": "main",
