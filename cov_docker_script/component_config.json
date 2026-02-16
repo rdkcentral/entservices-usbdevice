@@ -26,54 +26,30 @@
         "name": "ThunderTools",
         "repo": "https://github.com/rdkcentral/ThunderTools.git",
         "branch": "R4.4.3",
-        "source_patches": [
-          {
-            "file": ".",
-            "type": "patch",
-            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/00010-R4.4-Add-support-for-project-dir.patch"
-          }
-        ],
         "build": {
           "type": "cmake",
           "build_dir": "build",
-          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON"
+          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON",
+          "pre_build_commands": [
+            "cd $HOME/build/ThunderTools && patch -p1 < $HOME/usr/include/rdkb/testframework/patches/00010-R4.4-Add-support-for-project-dir.patch"
+          ]
         }
       },
       {
         "name": "Thunder",
         "repo": "https://github.com/rdkcentral/Thunder.git",
         "branch": "R4.4.1",
-        "source_patches": [
-          {
-            "file": ".",
-            "type": "patch",
-            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch",
-            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/error_code_R4_4.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch",
-            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/1004-Add-support-for-project-dir.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch",
-            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/RDKEMW-733-Add-ENTOS-IDS.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch",
-            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/Jsonrpc_dynamic_error_handling.patch"
-          }
-        ],
         "build": {
           "type": "cmake",
           "build_dir": "build",
-          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DMESSAGING=ON -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555 -DEXCEPTIONS_ENABLE=ON"
+          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DMESSAGING=ON -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555 -DEXCEPTIONS_ENABLE=ON",
+          "pre_build_commands": [
+            "cd $HOME/build/Thunder && patch -p1 < $HOME/usr/include/rdkb/testframework/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch",
+            "cd $HOME/build/Thunder && patch -p1 < $HOME/usr/include/rdkb/testframework/patches/error_code_R4_4.patch",
+            "cd $HOME/build/Thunder && patch -p1 < $HOME/usr/include/rdkb/testframework/patches/1004-Add-support-for-project-dir.patch",
+            "cd $HOME/build/Thunder && patch -p1 < $HOME/usr/include/rdkb/testframework/patches/RDKEMW-733-Add-ENTOS-IDS.patch",
+            "cd $HOME/build/Thunder && patch -p1 < $HOME/usr/include/rdkb/testframework/patches/Jsonrpc_dynamic_error_handling.patch"
+          ]
         }
       },
       {

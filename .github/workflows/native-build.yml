@@ -38,7 +38,7 @@ jobs:
           if [ -d "$HOME/build/entservices-testframework/patches" ]; then
             cp -R $HOME/build/entservices-testframework/patches $HOME/usr/include/rdkb/testframework/
           fi
-          # Build and install dependencies
+          # Build and install dependencies (this will clone ThunderTools and Thunder)
           chmod +x build_tools_workflows/cov_docker_script/setup_dependencies.sh
           ./build_tools_workflows/cov_docker_script/setup_dependencies.sh ./cov_docker_script/component_config.json
           # Build component
