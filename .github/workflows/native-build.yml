@@ -23,6 +23,14 @@ jobs:
           git config --global --add safe.directory '*'
           # Pull the latest changes for the native build system
           git submodule update --init --recursive --remote
+          # Clone entservices-testframework (requires token)
+          mkdir -p $HOME/build
+          git clone --branch main https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git $HOME/build/entservices-testframework
+          # Copy testframework headers and patches
+          mkdir -p $HOME/usr/include/rdkb/testframework
+          cp -r $HOME/build/entservices-testframework/Tests/headers $HOME/usr/include/rdkb/testframework/
+          cp -r $HOME/build/entservices-testframework/Tests/mocks $HOME/usr/include/rdkb/testframework/
+          cp -r $HOME/build/entservices-testframework/patches $HOME/usr/include/rdkb/testframework/
           # Build and install dependencies
           chmod +x build_tools_workflows/cov_docker_script/setup_dependencies.sh
           ./build_tools_workflows/cov_docker_script/setup_dependencies.sh ./cov_docker_script/component_config.json
