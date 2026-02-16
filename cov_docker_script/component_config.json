@@ -1,0 +1,97 @@
+{
+  "_comment": "Component Build Configuration for Coverity/Native Builds",
+  "_version": "2.0",
+  "_description": "Defines dependencies and build settings for the entservices-usbdevice component",
+  
+  "dependencies": {
+    "_comment": "External repositories needed by this component",
+    "repos": [
+      {
+        "name": "trower-base64",
+        "repo": "https://github.com/xmidt-org/trower-base64.git",
+        "branch": "main",
+        "header_paths": [
+          { "source": "include", "destination": "$HOME/usr/include/rdkb" }
+        ],
+        "build": {
+          "type": "commands",
+          "commands": [
+            "meson setup --warnlevel 3 --werror build",
+            "ninja -C build",
+            "ninja -C build install"
+          ]
+        }
+      },
+      {
+        "name": "ThunderTools",
+        "repo": "https://github.com/rdkcentral/ThunderTools.git",
+        "branch": "R4.4.3",
+        "build": {
+          "type": "cmake",
+          "build_dir": "build",
+          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON"
+        }
+      },
+      {
+        "name": "Thunder",
+        "repo": "https://github.com/rdkcentral/Thunder.git",
+        "branch": "R4.4.1",
+        "build": {
+          "type": "cmake",
+          "build_dir": "build",
+          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DMESSAGING=ON -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555 -DEXCEPTIONS_ENABLE=ON"
+        }
+      },
+      {
+        "name": "entservices-apis",
+        "repo": "https://github.com/rdkcentral/entservices-apis.git",
+        "branch": "main",
+        "build": {
+          "type": "cmake",
+          "build_dir": "build",
+          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON",
+          "pre_build_commands": [
+            "rm -f jsonrpc/DTV.json"
+          ]
+        }
+      },
+      {
+        "name": "entservices-testframework",
+        "repo": "https://github.com/rdkcentral/entservices-testframework.git",
+        "branch": "main",
+        "requires_token": true,
+        "header_paths": [
+          { "source": "Tests/headers", "destination": "$HOME/usr/include/rdkb/testframework/headers" },
+          { "source": "Tests/mocks", "destination": "$HOME/usr/include/rdkb/testframework/mocks" }
+        ]
+      }
+    ]
+  },
+  
+  "native_component": {
+    "_comment": "Configuration for the main component being built",
+    "name": "entservices-usbdevice",
+    "include_path": "$HOME/usr/include/rdkb/",
+    "lib_output_path": "$HOME/usr/lib/",
+    "pre_build_commands": [
+      {
+        "description": "Create mock header directories for entservices-testframework",
+        "command": "bash -c 'mkdir -p $HOME/usr/include/rdkb/testframework/headers/{audiocapturemgr,rdk/{ds,iarmbus,iarmmgrs-hal,halif/deepsleep-manager},ccec/drivers,network,proc,libusb,Dobby/{Public/Dobby,IpcService}}'"
+      },
+      {
+        "description": "Create empty mock headers",
+        "command": "bash -c 'cd $HOME/usr/include/rdkb/testframework/headers && touch audiocapturemgr/audiocapturemgr_iarm.h ccec/drivers/CecIARMBusMgr.h rdk/ds/{audioOutputPort.hpp,compositeIn.hpp,dsDisplay.h,dsError.h,dsMgr.h,dsTypes.h,dsUtl.h,exception.hpp,hdmiIn.hpp,host.hpp,list.hpp,manager.hpp,sleepMode.hpp,videoDevice.hpp,videoOutputPort.hpp,videoOutputPortConfig.hpp,videoOutputPortType.hpp,videoResolution.hpp} rdk/iarmbus/{libIARM.h,libIBus.h,libIBusDaemon.h} rdk/halif/deepsleep-manager/deepSleepMgr.h rdk/iarmmgrs-hal/{mfrMgr.h,pwrMgr.h,sysMgr.h} network/{wifiSrvMgrIarmIf.h,netsrvmgrIarm.h} libudev.h libusb/libusb.h rfcapi.h rbus.h telemetry_busmessage_sender.h maintenanceMGR.h pkg.h edid-parser.hpp secure_wrapper.h wpa_ctrl.h proc/readproc.h btmgr.h rdk_logger_milestone.h audioOutputPortType.hpp audioOutputPortConfig.hpp tr181api.h dsRpc.h Dobby/{DobbyProtocol.h,DobbyProxy.h} Dobby/Public/Dobby/IDobbyProxy.h Dobby/IpcService/IpcFactory.h'"
+      },
+      {
+        "description": "Copy system gstreamer and glib headers",
+        "command": "bash -c 'if [ -d /usr/include/gstreamer-1.0/gst ]; then cp -r /usr/include/gstreamer-1.0/gst $HOME/usr/include/rdkb/; fi && if [ -d /usr/include/glib-2.0 ]; then cp -r /usr/include/glib-2.0/* $HOME/usr/include/rdkb/; fi && if [ -d /usr/lib/x86_64-linux-gnu/glib-2.0/include ]; then cp -r /usr/lib/x86_64-linux-gnu/glib-2.0/include/* $HOME/usr/include/rdkb/; fi && if [ -f /usr/local/include/trower-base64/base64.h ]; then cp /usr/local/include/trower-base64/base64.h $HOME/usr/include/rdkb/; fi'"
+      }
+    ],
+    "build": {
+      "type": "cmake",
+      "build_dir": "build",
+      "cmake_flags": "-G Ninja -DUSE_THUNDER_R4=ON -DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_DISABLE_FIND_PACKAGE_IARMBus=ON -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON -DCMAKE_DISABLE_FIND_PACKAGE_DS=ON -DCOMCAST_CONFIG=OFF -DRDK_SERVICES_COVERITY=ON -DRDK_SERVICES_L1_TEST=ON -DDS_FOUND=ON -DPLUGIN_USBDEVICE=ON -DCMAKE_CXX_FLAGS=\"-DEXCEPTIONS_ENABLE=ON -I$HOME/usr/include/rdkb/testframework/headers -I$HOME/usr/include/rdkb/testframework/headers/audiocapturemgr -I$HOME/usr/include/rdkb/testframework/headers/rdk/ds -I$HOME/usr/include/rdkb/testframework/headers/rdk/iarmbus -I$HOME/usr/include/rdkb/testframework/headers/rdk/iarmmgrs-hal -I$HOME/usr/include/rdkb/testframework/headers/ccec/drivers -I$HOME/usr/include/rdkb/testframework/headers/network -I$HOME/usr/include/rdkb/testframework/headers/libusb -I$HOME/usr/include/rdkb/testframework/headers/Dobby -I$HOME/usr/include/rdkb/testframework/headers/Dobby/Public/Dobby -I$HOME/usr/include/rdkb/testframework/headers/Dobby/IpcService -I$HOME/usr/include/rdkb/testframework/mocks -I$HOME/usr/include/rdkb/testframework/mocks/thunder -I/usr/include/libdrm -include $HOME/usr/include/rdkb/testframework/mocks/devicesettings.h -include $HOME/usr/include/rdkb/testframework/mocks/Iarm.h -include $HOME/usr/include/rdkb/testframework/mocks/Rfc.h -include $HOME/usr/include/rdkb/testframework/mocks/RBus.h -include $HOME/usr/include/rdkb/testframework/mocks/Telemetry.h -include $HOME/usr/include/rdkb/testframework/mocks/Udev.h -include $HOME/usr/include/rdkb/testframework/mocks/pkg.h -include $HOME/usr/include/rdkb/testframework/mocks/maintenanceMGR.h -include $HOME/usr/include/rdkb/testframework/mocks/secure_wrappermock.h -include $HOME/usr/include/rdkb/testframework/mocks/libusb/libusb.h -include $HOME/usr/include/rdkb/testframework/mocks/Dobby.h -include $HOME/usr/include/rdkb/testframework/headers/Dobby/DobbyProtocol.h -include $HOME/usr/include/rdkb/testframework/headers/Dobby/DobbyProxy.h -include $HOME/usr/include/rdkb/testframework/headers/Dobby/Public/Dobby/IDobbyProxy.h -include $HOME/usr/include/rdkb/testframework/headers/Dobby/IpcService/IpcFactory.h -Wall -Werror -Wno-error=format -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS -DENABLE_SYSTEM_GET_STORE_DEMO_LINK -DENABLE_DEEP_SLEEP -DENABLE_SET_WAKEUP_SRC_CONFIG -DENABLE_THERMAL_PROTECTION -DUSE_DRM_SCREENCAPTURE -DHAS_API_SYSTEM -DHAS_API_POWERSTATE -DHAS_RBUS -DDISABLE_SECURITY_TOKEN -DENABLE_DEVICE_MANUFACTURER_INFO -DUSE_THUNDER_R4=ON -DTHUNDER_VERSION=4 -DTHUNDER_VERSION_MAJOR=4 -DTHUNDER_VERSION_MINOR=4\"",
+      "parallel_make": true
+    }
+  }
+}
