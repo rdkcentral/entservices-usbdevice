@@ -23,23 +23,68 @@
         }
       },
       {
+        "name": "entservices-testframework",
+        "repo": "https://github.com/rdkcentral/entservices-testframework.git",
+        "branch": "main",
+        "requires_token": true,
+        "header_paths": [
+          { "source": "Tests/headers", "destination": "$HOME/usr/include/rdkb/testframework/headers" },
+          { "source": "Tests/mocks", "destination": "$HOME/usr/include/rdkb/testframework/mocks" },
+          { "source": "patches", "destination": "$HOME/usr/include/rdkb/testframework/patches" }
+        ]
+      },
+      {
         "name": "ThunderTools",
         "repo": "https://github.com/rdkcentral/ThunderTools.git",
         "branch": "R4.4.3",
+        "source_patches": [
+          {
+            "file": ".",
+            "type": "patch",
+            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/00010-R4.4-Add-support-for-project-dir.patch"
+          }
+        ],
         "build": {
           "type": "cmake",
           "build_dir": "build",
-          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON"
+          "cmake_flags": "-G Ninja -DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON"
         }
       },
       {
         "name": "Thunder",
         "repo": "https://github.com/rdkcentral/Thunder.git",
         "branch": "R4.4.1",
+        "source_patches": [
+          {
+            "file": ".",
+            "type": "patch",
+            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch"
+          },
+          {
+            "file": ".",
+            "type": "patch",
+            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/error_code_R4_4.patch"
+          },
+          {
+            "file": ".",
+            "type": "patch",
+            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/1004-Add-support-for-project-dir.patch"
+          },
+          {
+            "file": ".",
+            "type": "patch",
+            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/RDKEMW-733-Add-ENTOS-IDS.patch"
+          },
+          {
+            "file": ".",
+            "type": "patch",
+            "patch_file": "$HOME/usr/include/rdkb/testframework/patches/Jsonrpc_dynamic_error_handling.patch"
+          }
+        ],
         "build": {
           "type": "cmake",
           "build_dir": "build",
-          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DMESSAGING=ON -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555 -DEXCEPTIONS_ENABLE=ON"
+          "cmake_flags": "-G Ninja -DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DMESSAGING=ON -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555 -DEXCEPTIONS_ENABLE=ON"
         }
       },
       {
@@ -49,21 +94,11 @@
         "build": {
           "type": "cmake",
           "build_dir": "build",
-          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON",
+          "cmake_flags": "-G Ninja -DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON",
           "pre_build_commands": [
             "rm -f jsonrpc/DTV.json"
           ]
         }
-      },
-      {
-        "name": "entservices-testframework",
-        "repo": "https://github.com/rdkcentral/entservices-testframework.git",
-        "branch": "main",
-        "requires_token": true,
-        "header_paths": [
-          { "source": "Tests/headers", "destination": "$HOME/usr/include/rdkb/testframework/headers" },
-          { "source": "Tests/mocks", "destination": "$HOME/usr/include/rdkb/testframework/mocks" }
-        ]
       }
     ]
   },
