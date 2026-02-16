@@ -24,9 +24,8 @@
       },
       {
         "name": "entservices-testframework",
-        "repo": "https://github.com/rdkcentral/entservices-testframework.git",
+        "repo": "https://$GITHUB_TOKEN@github.com/rdkcentral/entservices-testframework.git",
         "branch": "main",
-        "requires_token": true,
         "header_paths": [
           { "source": "Tests/headers", "destination": "$HOME/usr/include/rdkb/testframework/headers" },
           { "source": "Tests/mocks", "destination": "$HOME/usr/include/rdkb/testframework/mocks" },
