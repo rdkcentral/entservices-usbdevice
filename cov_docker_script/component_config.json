@@ -82,7 +82,7 @@
         "build": {
           "type": "cmake",
           "build_dir": "build",
-          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DMESSAGING=ON -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555 -DEXCEPTIONS_ENABLE=ON"
+          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_PREFIX_PATH=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DGENERIC_CMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DMESSAGING=ON -DBUILD_TYPE=Debug -DBINDING=127.0.0.1 -DPORT=55555 -DEXCEPTIONS_ENABLE=ON"
         }
       },
       {
