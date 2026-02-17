@@ -93,9 +93,9 @@
         "branch": "main",
         "build": {
           "type": "cmake",
-          "build_dir": "build",",
-          "make_targets": ["all", "install"]
-          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DEXCEPTIONS_ENABLE=ON",
+          "build_dir": "build",
+          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr",
+          "make_targets": ["all", "install"],
           "pre_build_commands": [
             "rm -f jsonrpc/DTV.json"
           ]
