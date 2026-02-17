@@ -94,7 +94,7 @@
         "build": {
           "type": "cmake",
           "build_dir": "build",
-          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr",
+          "cmake_flags": "-DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_PREFIX_PATH=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake",
           "make_targets": ["all", "install"],
           "pre_build_commands": [
             "rm -f jsonrpc/DTV.json"
