@@ -1,7 +1,7 @@
 {
-  "_comment": "Component Build Configuration for Coverity/Native Builds",
+  "_comment": "Universal Component Build Configuration for all entservices plugins",
   "_version": "2.0",
-  "_description": "Defines dependencies and build settings for the entservices-usbdevice component",
+  "_description": "To adapt for a new plugin: 1) Change 'name' field (line ~102), 2) Update -DPLUGIN_* flag (line ~116)",
   
   "dependencies": {
     "_comment": "External repositories needed by this component",
@@ -98,7 +98,7 @@
   },
   
   "native_component": {
-    "_comment": "Configuration for the main component being built",
+    "_comment": "PLUGIN-SPECIFIC: Update 'name' and -DPLUGIN_* flag below for each plugin",
     "name": "entservices-usbdevice",
     "pre_build_commands": [
       {
