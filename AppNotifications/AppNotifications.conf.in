@@ -1,5 +1,0 @@
-autostart = "@PLUGIN_APPNOTIFICATIONS_AUTOSTART@"
-precondition = ["Platform"]
-callsign = "org.rdk.AppNotifications"
-startuporder = "@PLUGIN_APPNOTIFICATIONS_STARTUPORDER@"
-

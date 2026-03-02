@@ -22,52 +22,8 @@ set(THUNDER_PORT 9998)
 
 find_package(${NAMESPACE}Plugins REQUIRED)
 
-if(PLUGIN_MIGRATION)
-    set(SRC_FILES ${SRC_FILES} tests/Migration_L2Test.cpp)
-endif()
-
-if (PLUGIN_ANALYTICS)
-    set(SRC_FILES ${SRC_FILES} tests/Analytics_L2Test.cpp)
-endif()
-
-if(PLUGIN_APPMANAGER)
-    set(SRC_FILES ${SRC_FILES} tests/AppManager_L2Test.cpp)
-endif()
-
-if(PLUGIN_TELEMETRY)
-    set(SRC_FILES ${SRC_FILES} tests/Telemetry_L2Test.cpp)
-endif()
-
 if(PLUGIN_USBDEVICE)
     set(SRC_FILES ${SRC_FILES} tests/UsbDevice_L2Test.cpp)
-endif()
-
-if(PLUGIN_USB_MASS_STORAGE)
-     set(SRC_FILES ${SRC_FILES} tests/UsbMassStorage_L2Test.cpp)
-endif()
-
-if(PLUGIN_USERSETTINGS)
-    set(SRC_FILES ${SRC_FILES} tests/UserSettings_L2Test.cpp)
-endif()
-
-if(PLUGIN_USBACCESS)
-    set(SRC_FILES ${SRC_FILES} tests/UsbAccess_L2Test.cpp)
-endif()
-
-if(PLUGIN_STORAGE_MANAGER)
-    set(SRC_FILES ${SRC_FILES} tests/StorageManager_L2Test.cpp)
-endif()
-
-if(PLUGIN_SHAREDSTORAGE)
-    set(SRC_FILES ${SRC_FILES} tests/SharedStorage_L2Test.cpp)
-endif()
-
-if(PLUGIN_RESOURCEMANAGER)
-    set(SRC_FILES ${SRC_FILES} tests/ResourceManager_L2Test.cpp)
-endif()
-
-if(PLUGIN_OCICONTAINER)
-    set(SRC_FILES ${SRC_FILES} tests/OCIContainer_L2Test.cpp)
 endif()
 
 add_library(${MODULE_NAME} SHARED ${SRC_FILES})

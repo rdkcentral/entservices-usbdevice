@@ -3,8 +3,8 @@ applyTo: "**/**Implementation.cpp,**/**Implementation.h,**/**.cpp,**/**.h"
 ---
 
 # Instruction Summary
-  1. [Inter-Plugin Communication](https://github.com/rdkcentral/entservices-infra/blob/develop/.github/instructions/Pluginimplementation.instructions.md#inter-plugin-communication)
-  2. [On-Demand Plugin Interface Acquisition](https://github.com/rdkcentral/entservices-infra/blob/develop/.github/instructions/Pluginimplementation.instructions.md#on-demand-plugin-interface-acquisition)
+  1. [Inter-Plugin Communication](https://github.com/rdkcentral/entservices-usbdevice/blob/develop/.github/instructions/Pluginimplementation.instructions.md#inter-plugin-communication)
+  2. [On-Demand Plugin Interface Acquisition](https://github.com/rdkcentral/entservices-usbdevice/blob/develop/.github/instructions/Pluginimplementation.instructions.md#on-demand-plugin-interface-acquisition)
 
 ### Inter-Plugin Communication
 
@@ -14,7 +14,7 @@ Plugins should use COM-RPC (e.g., use QueryInterfaceByCallsign or QueryInterface
 
 ### Example
 
-Telemetry Plugin accessing UserSettings(via COM-RPC) through the IShell Interface API **QueryInterfaceByCallsign()** exposed for each Plugin - (Refer https://github.com/rdkcentral/entservices-infra/blob/7988b8a719e594782f041309ce2d079cf6f52863/Telemetry/TelemetryImplementation.cpp#L160 )
+Telemetry Plugin accessing UserSettings(via COM-RPC) through the IShell Interface API **QueryInterfaceByCallsign()** exposed for each Plugin - (Refer https://github.com/rdkcentral/entservices-usbdevice/blob/7988b8a719e594782f041309ce2d079cf6f52863/Telemetry/TelemetryImplementation.cpp#L160 )
 
 ```cpp
 _userSettingsPlugin = _service->QueryInterfaceByCallsign<WPEFramework::Exchange::IUserSettings>(USERSETTINGS_CALLSIGN);

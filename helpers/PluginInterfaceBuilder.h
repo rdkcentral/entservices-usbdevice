@@ -100,8 +100,8 @@ namespace Plugin {
     {
         WPEFramework::PluginHost::IShell* controller = builder.controller();
         const std::string& callsign = builder.callSign();
-        const int retry_count = builder.retryCount();
-        const uint32_t retry_interval = builder.retryInterval();
+        const int retryCount = builder.retryCount();
+        const uint32_t retryInterval = builder.retryInterval();
         int count = 0;
 
         if (!controller) {
@@ -113,16 +113,14 @@ namespace Plugin {
             auto pluginInterface = controller->QueryInterfaceByCallsign<INTERFACE>(callsign.c_str());
 
             if (pluginInterface) {
-                LOGINFO("plugin interface succeed and retry count: %d",count);
+                LOGINFO("plugin interface succeed and retry count: %d", count);
                 return pluginInterface;
-            }
-            else
-            {
+            } else {
                 count++;
-                LOGERR("plugin interface failed and retry: %d",count);
-                usleep(retry_interval*1000);
+                LOGERR("plugin interface failed and retry: %d", count);
+                usleep(retryInterval * 1000);
             }
-        }while(count < retry_count);
+        } while (count < retryCount);
 
         return nullptr;
     }
@@ -140,8 +138,8 @@ namespace Plugin {
         PluginHost::IShell* _service;
         uint32_t _version;
         uint32_t _timeout;
-        int _retry_count;
-        uint32_t _retry_interval;
+        int _retryCount;
+        uint32_t _retryInterval;
 
     public:
         PluginInterfaceBuilder(const char* callsign)
@@ -149,8 +147,8 @@ namespace Plugin {
             , _service(nullptr)
             , _version(static_cast<uint32_t>(~0))
             , _timeout(3000)
-            ,_retry_count(0)
-            ,_retry_interval(0)
+            , _retryCount(0)
+            , _retryInterval(0)
         {
         }
 
@@ -169,7 +167,7 @@ namespace Plugin {
             return *this;
         }
 
-        inline PluginInterfaceBuilder& withIShell(PluginHost::IShell * service)
+        inline PluginInterfaceBuilder& withIShell(PluginHost::IShell* service)
         {
             _service = service;
             return *this;
@@ -177,13 +175,13 @@ namespace Plugin {
 
         inline PluginInterfaceBuilder& withRetryIntervalMS(int retryInterval)
         {
-            _retry_interval = retryInterval;
+            _retryInterval = retryInterval;
             return *this;
         }
 
         inline PluginInterfaceBuilder& withRetryCount(int retryCount)
         {
-            _retry_count = retryCount;
+            _retryCount = retryCount;
             return *this;
         }
 
@@ -201,12 +199,12 @@ namespace Plugin {
 
         const uint32_t retryInterval() const
         {
-            return _retry_interval;
+            return _retryInterval;
         }
 
         const int retryCount() const
         {
-            return _retry_count;
+            return _retryCount;
         }
 
         const std::string& callSign() const
