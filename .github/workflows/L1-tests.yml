@@ -139,7 +139,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-usbdevice
           path: entservices-usbdevice
-          ref: topic/RDKEMW-13481_new
+          ref: develop
 
       - name: Checkout googletest
         uses: actions/checkout@v3
