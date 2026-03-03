@@ -100,14 +100,14 @@ jobs:
         with:
           repository: rdkcentral/entservices-usbdevice
           path: entservices-usbdevice
-          ref: topic/RDKEMW-13481_new
+          ref: develop
          
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: feature/RDKEMW-12937_1
+          ref: develop
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout googletest
