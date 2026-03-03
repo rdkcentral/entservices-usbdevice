@@ -161,6 +161,7 @@ jobs:
           cp essos/essos-resmgr.h $GITHUB_WORKSPACE/entservices-usbdevice/ResourceManager/
 
       - name: Apply patches ThunderTools
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |  
           cd $GITHUB_WORKSPACE/ThunderTools
           patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/00010-R4.4-Add-support-for-project-dir.patch
@@ -182,6 +183,7 @@ jobs:
           cmake --install build/ThunderTools
 
       - name: Apply patches Thunder
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd $GITHUB_WORKSPACE/Thunder
           patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch
