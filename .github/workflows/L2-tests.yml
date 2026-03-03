@@ -93,6 +93,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: entservices-usbdevice
+          ref: topic/RDKEMW-13481_new
 
       - name: Checkout entservices-usbdevice-testframework
         if: ${{ inputs.caller_source == 'testframework' }}
@@ -100,14 +101,14 @@ jobs:
         with:
           repository: rdkcentral/entservices-usbdevice
           path: entservices-usbdevice
-          ref: develop
+          ref: topic/RDKEMW-13481_new
          
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: feature/RDKEMW-12937_1
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout googletest
