@@ -38,6 +38,8 @@ add_library(${MODULE_NAME} SHARED
     USBDevice.cpp
     Module.cpp)
 
+target_compile_options(${MODULE_NAME} PRIVATE -Wno-error=format)
+
 set_target_properties(${MODULE_NAME} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES)
@@ -60,6 +62,8 @@ install(TARGETS ${MODULE_NAME}
 add_library(${PLUGIN_IMPLEMENTATION} SHARED
     USBDeviceImplementation.cpp
     Module.cpp)
+
+target_compile_options(${PLUGIN_IMPLEMENTATION} PRIVATE -Wno-error=format)
 
 include_directories(../helpers)
 

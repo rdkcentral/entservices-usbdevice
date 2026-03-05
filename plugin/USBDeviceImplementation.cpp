@@ -24,6 +24,7 @@
 #include "tracing/Logging.h"
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
+#include <stdio.h>
 
 #if defined(RDK_SERVICE_L2_TEST) || defined(RDK_SERVICES_L1_TEST)
 #define PLUGIN_USBDEVICE_PATH   "/tmp/bus/usb/devices"
@@ -86,7 +87,7 @@ uint32_t USBDeviceImplementation::libUSBInit(void)
     uint32_t status = Core::ERROR_GENERAL;
     int retValue = LIBUSB_SUCCESS;
     LOGINFO("Entry");
-
+    printf("Test Coverity: %s\n");
     retValue = libusb_init_context(/*ctx=*/NULL, /*options=*/NULL, /*num_options=*/0);
 
     if (LIBUSB_SUCCESS != retValue)
