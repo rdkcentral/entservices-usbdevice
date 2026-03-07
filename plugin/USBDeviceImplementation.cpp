@@ -215,7 +215,7 @@ int USBDeviceImplementation::libUSBHotPlugCallbackDeviceAttached(libusb_context 
 			  	                       usbDevice.deviceName.c_str(),
 			  	                       usbDevice.devicePath.c_str());
 
-              USBDeviceImplementation::instance()->dispatchEvent(USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED, usbDevice);
+              USBDeviceImplementation::instance()->dispatchEvent(USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED, std::move(usbDevice));
           }
           else
           {
@@ -250,7 +250,7 @@ int USBDeviceImplementation::libUSBHotPlugCallbackDeviceDetached(libusb_context 
 			  	                       usbDevice.deviceName.c_str(),
 			  	                       usbDevice.devicePath.c_str());
 
-              USBDeviceImplementation::instance()->dispatchEvent(USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT, usbDevice);
+              USBDeviceImplementation::instance()->dispatchEvent(USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT, std::move(usbDevice));
           }
           else
           {
@@ -912,7 +912,7 @@ Core::hresult USBDeviceImplementation::Unregister(Exchange::IUSBDevice::INotific
 
 void USBDeviceImplementation::dispatchEvent(Event event, Exchange::IUSBDevice::USBDevice usbDevice)
 {
-    Core::IWorkerPool::Instance().Submit(Job::Create(this, event, usbDevice));
+    Core::IWorkerPool::Instance().Submit(Job::Create(this, event, std::move(usbDevice)));
 }
 
 void USBDeviceImplementation::Dispatch(Event event, const Exchange::IUSBDevice::USBDevice usbDevice)
@@ -957,8 +957,6 @@ Core::hresult USBDeviceImplementation::GetDeviceList(IUSBDeviceIterator*& device
     libusb_device **devs = nullptr;
     ssize_t devCount = 0;
 
-    _adminLock.Lock();
-
     LOGINFO("GetDeviceList");
 
     devCount = libusb_get_device_list(NULL, &devs);
@@ -1000,7 +998,6 @@ Core::hresult USBDeviceImplementation::GetDeviceList(IUSBDeviceIterator*& device
         LOGWARN("USBDevice Not found");
         status = Core::ERROR_NONE;
     }
-    _adminLock.Unlock();
 
     return status;
 }
