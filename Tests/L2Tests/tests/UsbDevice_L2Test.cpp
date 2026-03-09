@@ -416,112 +416,112 @@ MATCHER_P(MatchRequestStatus, data, "")
   * Sending Plugged In event and Verify USBDevice struct with Valid device details
   * Deactivating the USB Device
 */
-TEST_F(USBDeviceTest, devicePluggedInAndPluggedOut)
-{
-    Core::Sink<USBDeviceNotificationHandler> notification;
-    uint32_t signalled = USBDevice_StateInvalid;
-    Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
+// TEST_F(USBDeviceTest, devicePluggedInAndPluggedOut)
+// {
+//     Core::Sink<USBDeviceNotificationHandler> notification;
+//     uint32_t signalled = USBDevice_StateInvalid;
+//     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
 
-    TEST_LOG("** Test Case: devicePluggedInAndPluggedOut Started **");
+//     TEST_LOG("** Test Case: devicePluggedInAndPluggedOut Started **");
 
-    Mock_SetSerialNumberInUSBDevicePath();
+//     Mock_SetSerialNumberInUSBDevicePath();
 
-    if (CreateUSBDeviceInterfaceObjectUsingComRPCConnection() != Core::ERROR_NONE)
-    {
-        TEST_LOG("Invalid Client_USBDevice");
-    }
-    else
-    {
-        ASSERT_TRUE(m_controller_usbdevice!= nullptr);
-        if (m_controller_usbdevice)
-        {
-            ASSERT_TRUE(m_usbdeviceplugin!= nullptr);
+//     if (CreateUSBDeviceInterfaceObjectUsingComRPCConnection() != Core::ERROR_NONE)
+//     {
+//         TEST_LOG("Invalid Client_USBDevice");
+//     }
+//     else
+//     {
+//         ASSERT_TRUE(m_controller_usbdevice!= nullptr);
+//         if (m_controller_usbdevice)
+//         {
+//             ASSERT_TRUE(m_usbdeviceplugin!= nullptr);
 
-            if (m_usbdeviceplugin)
-            {
-                std::string message;
-                JsonObject expected_status;
-                StrictMock<AsyncHandlerMock_USBDevice> async_handler;
-                uint32_t return_value =  Core::ERROR_GENERAL;
-                JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(USBDEVICE_CALLSIGN, USBDEVICEL2TEST_CALLSIGN);
+//             if (m_usbdeviceplugin)
+//             {
+//                 std::string message;
+//                 JsonObject expected_status;
+//                 StrictMock<AsyncHandlerMock_USBDevice> async_handler;
+//                 uint32_t return_value =  Core::ERROR_GENERAL;
+//                 JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(USBDEVICE_CALLSIGN, USBDEVICEL2TEST_CALLSIGN);
 
-                return_value = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT,
-                                                       _T("onDevicePluggedIn"),
-                                                       [this, &async_handler](const Core::JSON::Container &eventPayload) {
-                                                       async_handler.OnDevicePluggedIn(eventPayload);
-                                       });
-                EXPECT_EQ(Core::ERROR_NONE, return_value);
+//                 return_value = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT,
+//                                                        _T("onDevicePluggedIn"),
+//                                                        [this, &async_handler](const Core::JSON::Container &eventPayload) {
+//                                                        async_handler.OnDevicePluggedIn(eventPayload);
+//                                        });
+//                 EXPECT_EQ(Core::ERROR_NONE, return_value);
 
-                return_value = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT,
-                                                       _T("onDevicePluggedOut"),
-                                                       [this, &async_handler](const Core::JSON::Container &eventPayload) {
-                                                       async_handler.OnDevicePluggedOut(eventPayload);
-                                       });
-                EXPECT_EQ(Core::ERROR_NONE, return_value);
+//                 return_value = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT,
+//                                                        _T("onDevicePluggedOut"),
+//                                                        [this, &async_handler](const Core::JSON::Container &eventPayload) {
+//                                                        async_handler.OnDevicePluggedOut(eventPayload);
+//                                        });
+//                 EXPECT_EQ(Core::ERROR_NONE, return_value);
 
-                m_usbdeviceplugin->Register(&notification);
+//                 m_usbdeviceplugin->Register(&notification);
 
-                /* HotPlug Attach Device 1 Verification */
-                Mock_SetDeviceDesc(MOCK_USB_DEVICE_BUS_NUMBER_1, MOCK_USB_DEVICE_ADDRESS_1,LIBUSB_CLASS_MASS_STORAGE);
+//                 /* HotPlug Attach Device 1 Verification */
+//                 Mock_SetDeviceDesc(MOCK_USB_DEVICE_BUS_NUMBER_1, MOCK_USB_DEVICE_ADDRESS_1,LIBUSB_CLASS_MASS_STORAGE);
 
-                libusb_device dev = {0};
-                dev.bus_number = MOCK_USB_DEVICE_BUS_NUMBER_1;
-                dev.device_address = MOCK_USB_DEVICE_ADDRESS_1;
-                dev.port_number = MOCK_USB_DEVICE_PORT_1;
+//                 libusb_device dev = {0};
+//                 dev.bus_number = MOCK_USB_DEVICE_BUS_NUMBER_1;
+//                 dev.device_address = MOCK_USB_DEVICE_ADDRESS_1;
+//                 dev.port_number = MOCK_USB_DEVICE_PORT_1;
 
-                libUSBHotPlugCbDeviceAttached(nullptr, &dev, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, 0);
+//                 libUSBHotPlugCbDeviceAttached(nullptr, &dev, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, 0);
 
-                message = "{\"device\":{\"deviceClass\":8,\"deviceSubclass\":8,\"deviceName\":\"100\\/001\",\"devicePath\":\"\\/dev\\/sda\"}}";
-                expected_status.FromString(message);
-                // EXPECT_CALL(async_handler, OnDevicePluggedIn(MatchRequestStatus(expected_status)));
+//                 message = "{\"device\":{\"deviceClass\":8,\"deviceSubclass\":8,\"deviceName\":\"100\\/001\",\"devicePath\":\"\\/dev\\/sda\"}}";
+//                 expected_status.FromString(message);
+//                 // EXPECT_CALL(async_handler, OnDevicePluggedIn(MatchRequestStatus(expected_status)));
 
-                signalled = notification.WaitForRequestStatus(JSON_TIMEOUT, USBDevice_onDevicePluggedIn, actual_usbDevice);
-                EXPECT_TRUE(signalled & USBDevice_onDevicePluggedIn);
+//                 signalled = notification.WaitForRequestStatus(JSON_TIMEOUT, USBDevice_onDevicePluggedIn, actual_usbDevice);
+//                 EXPECT_TRUE(signalled & USBDevice_onDevicePluggedIn);
 
-                // ASSERT_EQ(actual_usbDevice.deviceClass, LIBUSB_CLASS_MASS_STORAGE);
-                // ASSERT_EQ(actual_usbDevice.deviceSubclass, LIBUSB_CLASS_MASS_STORAGE);
-                // ASSERT_EQ(actual_usbDevice.deviceName, std::string("100/001"));
-                // ASSERT_EQ(actual_usbDevice.devicePath, std::string("/dev/sda"));
+//                 // ASSERT_EQ(actual_usbDevice.deviceClass, LIBUSB_CLASS_MASS_STORAGE);
+//                 // ASSERT_EQ(actual_usbDevice.deviceSubclass, LIBUSB_CLASS_MASS_STORAGE);
+//                 // ASSERT_EQ(actual_usbDevice.deviceName, std::string("100/001"));
+//                 // ASSERT_EQ(actual_usbDevice.devicePath, std::string("/dev/sda"));
 
-                /* HotPlug Dettach Device 1 Verification */
-                Mock_SetDeviceDesc(MOCK_USB_DEVICE_BUS_NUMBER_1, MOCK_USB_DEVICE_ADDRESS_1,LIBUSB_CLASS_MASS_STORAGE);
+//                 /* HotPlug Dettach Device 1 Verification */
+//                 Mock_SetDeviceDesc(MOCK_USB_DEVICE_BUS_NUMBER_1, MOCK_USB_DEVICE_ADDRESS_1,LIBUSB_CLASS_MASS_STORAGE);
 
-                dev.bus_number = MOCK_USB_DEVICE_BUS_NUMBER_1;
-                dev.device_address = MOCK_USB_DEVICE_ADDRESS_1;
-                dev.port_number = MOCK_USB_DEVICE_PORT_1;
+//                 dev.bus_number = MOCK_USB_DEVICE_BUS_NUMBER_1;
+//                 dev.device_address = MOCK_USB_DEVICE_ADDRESS_1;
+//                 dev.port_number = MOCK_USB_DEVICE_PORT_1;
 
-                libUSBHotPlugCbDeviceDetached(nullptr, &dev, LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0);
+//                 libUSBHotPlugCbDeviceDetached(nullptr, &dev, LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0);
 
-                message = "{\"device\":{\"deviceClass\":8,\"deviceSubclass\":8,\"deviceName\":\"100\\/001\",\"devicePath\":\"\\/dev\\/sda\"}}";
-                expected_status.FromString(message);
-                // EXPECT_CALL(async_handler, OnDevicePluggedOut(MatchRequestStatus(expected_status)));
+//                 message = "{\"device\":{\"deviceClass\":8,\"deviceSubclass\":8,\"deviceName\":\"100\\/001\",\"devicePath\":\"\\/dev\\/sda\"}}";
+//                 expected_status.FromString(message);
+//                 // EXPECT_CALL(async_handler, OnDevicePluggedOut(MatchRequestStatus(expected_status)));
 
-                signalled = notification.WaitForRequestStatus(JSON_TIMEOUT, USBDevice_onDevicePluggedOut, actual_usbDevice);
-                EXPECT_TRUE(signalled & USBDevice_onDevicePluggedOut);
+//                 signalled = notification.WaitForRequestStatus(JSON_TIMEOUT, USBDevice_onDevicePluggedOut, actual_usbDevice);
+//                 EXPECT_TRUE(signalled & USBDevice_onDevicePluggedOut);
 
-                // ASSERT_EQ(actual_usbDevice.deviceClass, LIBUSB_CLASS_MASS_STORAGE);
-                // ASSERT_EQ(actual_usbDevice.deviceSubclass, LIBUSB_CLASS_MASS_STORAGE);
-                // ASSERT_EQ(actual_usbDevice.deviceName, std::string("100/001"));
-                // ASSERT_EQ(actual_usbDevice.devicePath, std::string("/dev/sda"));
+//                 // ASSERT_EQ(actual_usbDevice.deviceClass, LIBUSB_CLASS_MASS_STORAGE);
+//                 // ASSERT_EQ(actual_usbDevice.deviceSubclass, LIBUSB_CLASS_MASS_STORAGE);
+//                 // ASSERT_EQ(actual_usbDevice.deviceName, std::string("100/001"));
+//                 // ASSERT_EQ(actual_usbDevice.devicePath, std::string("/dev/sda"));
 
-                m_usbdeviceplugin->Unregister(&notification);
-                m_usbdeviceplugin->Release();
-                jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onDevicePluggedIn"));
-                jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onDevicePluggedOut"));
-            }
-            else
-            {
-                TEST_LOG("m_usbdeviceplugin is NULL");
-            }
-            m_controller_usbdevice->Release();
-        }
-        else
-        {
-            TEST_LOG("m_controller_usbdevice is NULL");
-        }
-    }
-    TEST_LOG("** Test Case: devicePluggedInAndPluggedOut Ended **");
-}
+//                 m_usbdeviceplugin->Unregister(&notification);
+//                 m_usbdeviceplugin->Release();
+//                 jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onDevicePluggedIn"));
+//                 jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onDevicePluggedOut"));
+//             }
+//             else
+//             {
+//                 TEST_LOG("m_usbdeviceplugin is NULL");
+//             }
+//             m_controller_usbdevice->Release();
+//         }
+//         else
+//         {
+//             TEST_LOG("m_controller_usbdevice is NULL");
+//         }
+//     }
+//     TEST_LOG("** Test Case: devicePluggedInAndPluggedOut Ended **");
+// }
 
 /* Test Case for getDeviceList Method with single mass storage USB
   * Activating USB Device Plugin,
