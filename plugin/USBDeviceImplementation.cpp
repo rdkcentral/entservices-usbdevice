@@ -41,6 +41,7 @@
 #define PLUGIN_USBDEVICE_VENDOR_PATH "device/vendor"
 #define PLUGIN_USBDEVICE_MODEL_PATH "device/model"
 
+
 /**
 *   @brief length of the usb string descriptor header
 */
