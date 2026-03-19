@@ -1059,129 +1059,594 @@ TEST_F(USBDeviceTest, OnDevicePluggedOut_Failure_GetDeviceDescriptorFails)
 }
 
 typedef enum : uint32_t {
-    USBDevice_onDevicePluggedIn = 0x00000001,
-    USBDevice_onDevicePluggedOut = 0x00000002,
-} USBDeviceEventType_t;
+    USBDevice_StateInvalid = 0x00000000,
+    USBDevice_OnDevicePluggedIn = 0x00000001,
+    USBDevice_OnDevicePluggedOut = 0x00000002,
+} USBDeviceNotificationEventType_t;
 
-class USBDeviceNotificationHandler : public Exchange::IUSBDevice::INotification {
+class L1USBDeviceNotificationHandler : public Exchange::IUSBDevice::INotification {
 private:
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::condition_variable m_condition_variable;
     uint32_t m_event_signalled;
     
-    // Event flags
-    bool m_devicePluggedInReceived;
-    bool m_devicePluggedOutReceived;
+    Exchange::IUSBDevice::USBDevice m_lastPluggedInDevice;
+    Exchange::IUSBDevice::USBDevice m_lastPluggedOutDevice;
+    bool m_pluggedInReceived;
+    bool m_pluggedOutReceived;
     
-    // Parameter storage for validation
-    Exchange::IUSBDevice::USBDevice m_pluggedInDevice;
-    Exchange::IUSBDevice::USBDevice m_pluggedOutDevice;
+    mutable Core::CriticalSection m_refCountLock;
+    mutable uint32_t m_refCount;
     
-    BEGIN_INTERFACE_MAP(USBDeviceNotificationHandler)
+    BEGIN_INTERFACE_MAP(L1USBDeviceNotificationHandler)
     INTERFACE_ENTRY(Exchange::IUSBDevice::INotification)
     END_INTERFACE_MAP
 
 public:
-    USBDeviceNotificationHandler() 
-        : m_event_signalled(0)
-        , m_devicePluggedInReceived(false)
-        , m_devicePluggedOutReceived(false)
-    {
-        memset(&m_pluggedInDevice, 0, sizeof(m_pluggedInDevice));
-        memset(&m_pluggedOutDevice, 0, sizeof(m_pluggedOutDevice));
+    L1USBDeviceNotificationHandler() 
+        : m_event_signalled(USBDevice_StateInvalid)
+        , m_pluggedInReceived(false)
+        , m_pluggedOutReceived(false)
+        , m_refCount(1) {
+        m_lastPluggedInDevice = Exchange::IUSBDevice::USBDevice();
+        m_lastPluggedOutDevice = Exchange::IUSBDevice::USBDevice();
     }
     
-    virtual ~USBDeviceNotificationHandler() = default;
+    virtual ~L1USBDeviceNotificationHandler() = default;
 
-    void OnDevicePluggedIn(const Exchange::IUSBDevice::USBDevice &device) override
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_devicePluggedInReceived = true;
-        m_pluggedInDevice = device;
-        m_event_signalled |= USBDevice_onDevicePluggedIn;
-        m_condition_variable.notify_one();
+    void AddRef() const override {
+        m_refCountLock.Lock();
+        ++m_refCount;
+        m_refCountLock.Unlock();
     }
 
-    void OnDevicePluggedOut(const Exchange::IUSBDevice::USBDevice &device) override
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_devicePluggedOutReceived = true;
-        m_pluggedOutDevice = device;
-        m_event_signalled |= USBDevice_onDevicePluggedOut;
-        m_condition_variable.notify_one();
-    }
-
-    bool WaitForRequestStatus(uint32_t timeout_ms, USBDeviceEventType_t expected_status)
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        auto now = std::chrono::system_clock::now();
-        auto timeout = now + std::chrono::milliseconds(timeout_ms);
+    uint32_t Release() const override {
+        m_refCountLock.Lock();
+        --m_refCount;
+        uint32_t refCount = m_refCount;
+        m_refCountLock.Unlock();
         
-        while (!(m_event_signalled & expected_status))
-        {
-            if (m_condition_variable.wait_until(lock, timeout) == std::cv_status::timeout)
-            {
-                return false;
-            }
-            now = std::chrono::system_clock::now();
-            if (now >= timeout)
-            {
+        if (refCount == 0) {
+            delete this;
+            return Core::ERROR_DESTRUCTION_SUCCEEDED;
+        }
+        return refCount;
+    }
+
+    void OnDevicePluggedIn(const Exchange::IUSBDevice::USBDevice &device) override {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_lastPluggedInDevice = device;
+        m_pluggedInReceived = true;
+        m_event_signalled |= USBDevice_OnDevicePluggedIn;
+        m_condition_variable.notify_one();
+    }
+
+    void OnDevicePluggedOut(const Exchange::IUSBDevice::USBDevice &device) override {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_lastPluggedOutDevice = device;
+        m_pluggedOutReceived = true;
+        m_event_signalled |= USBDevice_OnDevicePluggedOut;
+        m_condition_variable.notify_one();
+    }
+
+    bool WaitForRequestStatus(uint32_t timeout_ms, USBDeviceNotificationEventType_t expected_status) {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        auto now = std::chrono::steady_clock::now();
+        auto timeout = std::chrono::milliseconds(timeout_ms);
+        
+        while (!(expected_status & m_event_signalled)) {
+            if (m_condition_variable.wait_until(lock, now + timeout) == std::cv_status::timeout) {
                 return false;
             }
         }
         return true;
     }
 
-    // Getters for event flags
-    bool IsDevicePluggedInReceived() const
-    {
+    const Exchange::IUSBDevice::USBDevice& GetLastPluggedInDevice() const {
         std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(m_mutex));
-        return m_devicePluggedInReceived;
+        return m_lastPluggedInDevice;
     }
 
-    bool IsDevicePluggedOutReceived() const
-    {
+    const Exchange::IUSBDevice::USBDevice& GetLastPluggedOutDevice() const {
         std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(m_mutex));
-        return m_devicePluggedOutReceived;
+        return m_lastPluggedOutDevice;
     }
 
-    // Getters for stored parameters
-    Exchange::IUSBDevice::USBDevice GetPluggedInDevice() const
-    {
+    string GetLastPluggedInDeviceName() const {
         std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(m_mutex));
-        return m_pluggedInDevice;
+        return m_lastPluggedInDevice.deviceName;
     }
 
-    Exchange::IUSBDevice::USBDevice GetPluggedOutDevice() const
-    {
+    string GetLastPluggedOutDeviceName() const {
         std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(m_mutex));
-        return m_pluggedOutDevice;
+        return m_lastPluggedOutDevice.deviceName;
     }
 
-    // Reset methods
-    void ResetDevicePluggedInEvent()
-    {
+    uint8_t GetLastPluggedInDeviceClass() const {
+        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(m_mutex));
+        return m_lastPluggedInDevice.deviceClass;
+    }
+
+    uint8_t GetLastPluggedOutDeviceClass() const {
+        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(m_mutex));
+        return m_lastPluggedOutDevice.deviceClass;
+    }
+
+    string GetLastPluggedInDevicePath() const {
+        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(m_mutex));
+        return m_lastPluggedInDevice.devicePath;
+    }
+
+    string GetLastPluggedOutDevicePath() const {
+        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(m_mutex));
+        return m_lastPluggedOutDevice.devicePath;
+    }
+
+    void ResetEvents() {
         std::unique_lock<std::mutex> lock(m_mutex);
-        m_devicePluggedInReceived = false;
-        m_event_signalled &= ~USBDevice_onDevicePluggedIn;
-        memset(&m_pluggedInDevice, 0, sizeof(m_pluggedInDevice));
-    }
-
-    void ResetDevicePluggedOutEvent()
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_devicePluggedOutReceived = false;
-        m_event_signalled &= ~USBDevice_onDevicePluggedOut;
-        memset(&m_pluggedOutDevice, 0, sizeof(m_pluggedOutDevice));
-    }
-
-    void ResetAllEvents()
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_event_signalled = 0;
-        m_devicePluggedInReceived = false;
-        m_devicePluggedOutReceived = false;
-        memset(&m_pluggedInDevice, 0, sizeof(m_pluggedInDevice));
-        memset(&m_pluggedOutDevice, 0, sizeof(m_pluggedOutDevice));
+        m_event_signalled = USBDevice_StateInvalid;
+        m_pluggedInReceived = false;
+        m_pluggedOutReceived = false;
+        m_lastPluggedInDevice = Exchange::IUSBDevice::USBDevice();
+        m_lastPluggedOutDevice = Exchange::IUSBDevice::USBDevice();
     }
 };
+
+TEST_F(USBDeviceTest, OnDevicePluggedIn_ViaJobDispatch_MassStorageDevice)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_MASS_STORAGE;
+    testDevice.deviceSubclass = 6;
+    testDevice.deviceName = "100/001";
+    testDevice.devicePath = "/dev/sda";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedIn));
+    EXPECT_EQ("100/001", notificationHandler->GetLastPluggedInDeviceName());
+    EXPECT_EQ(LIBUSB_CLASS_MASS_STORAGE, notificationHandler->GetLastPluggedInDeviceClass());
+    EXPECT_EQ("/dev/sda", notificationHandler->GetLastPluggedInDevicePath());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedIn_ViaJobDispatch_HIDDevice)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_HID;
+    testDevice.deviceSubclass = 1;
+    testDevice.deviceName = "101/002";
+    testDevice.devicePath = "";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedIn));
+    EXPECT_EQ("101/002", notificationHandler->GetLastPluggedInDeviceName());
+    EXPECT_EQ(LIBUSB_CLASS_HID, notificationHandler->GetLastPluggedInDeviceClass());
+    EXPECT_EQ("", notificationHandler->GetLastPluggedInDevicePath());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedOut_ViaJobDispatch_MassStorageDevice)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_MASS_STORAGE;
+    testDevice.deviceSubclass = 6;
+    testDevice.deviceName = "100/001";
+    testDevice.devicePath = "/dev/sda";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedOut));
+    EXPECT_EQ("100/001", notificationHandler->GetLastPluggedOutDeviceName());
+    EXPECT_EQ(LIBUSB_CLASS_MASS_STORAGE, notificationHandler->GetLastPluggedOutDeviceClass());
+    EXPECT_EQ("/dev/sda", notificationHandler->GetLastPluggedOutDevicePath());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedOut_ViaJobDispatch_HIDDevice)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_HID;
+    testDevice.deviceSubclass = 1;
+    testDevice.deviceName = "101/002";
+    testDevice.devicePath = "";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedOut));
+    EXPECT_EQ("101/002", notificationHandler->GetLastPluggedOutDeviceName());
+    EXPECT_EQ(LIBUSB_CLASS_HID, notificationHandler->GetLastPluggedOutDeviceClass());
+    EXPECT_EQ("", notificationHandler->GetLastPluggedOutDevicePath());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedIn_ViaLibUSBCallback_Success)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    libusb_device mockDev;
+    mockDev.bus_number = MOCK_USB_DEVICE_BUS_NUMBER_1;
+    mockDev.device_address = MOCK_USB_DEVICE_ADDRESS_1;
+    mockDev.port_number = MOCK_USB_DEVICE_PORT_1;
+    
+    Mock_SetDeviceDesc(MOCK_USB_DEVICE_BUS_NUMBER_1, MOCK_USB_DEVICE_ADDRESS_1);
+    Mock_SetSerialNumberInUSBDevicePath();
+    
+    libUSBHotPlugCbDeviceAttached(nullptr, &mockDev, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, nullptr);
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(2000, USBDevice_OnDevicePluggedIn));
+    EXPECT_EQ("100/001", notificationHandler->GetLastPluggedInDeviceName());
+    EXPECT_EQ(LIBUSB_CLASS_MASS_STORAGE, notificationHandler->GetLastPluggedInDeviceClass());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedOut_ViaLibUSBCallback_Success)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    libusb_device mockDev;
+    mockDev.bus_number = MOCK_USB_DEVICE_BUS_NUMBER_1;
+    mockDev.device_address = MOCK_USB_DEVICE_ADDRESS_1;
+    mockDev.port_number = MOCK_USB_DEVICE_PORT_1;
+    
+    Mock_SetDeviceDesc(MOCK_USB_DEVICE_BUS_NUMBER_1, MOCK_USB_DEVICE_ADDRESS_1);
+    Mock_SetSerialNumberInUSBDevicePath();
+    
+    libUSBHotPlugCbDeviceDetached(nullptr, &mockDev, LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, nullptr);
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(2000, USBDevice_OnDevicePluggedOut));
+    EXPECT_EQ("100/001", notificationHandler->GetLastPluggedOutDeviceName());
+    EXPECT_EQ(LIBUSB_CLASS_MASS_STORAGE, notificationHandler->GetLastPluggedOutDeviceClass());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, MultipleNotificationHandlers_BothReceivePluggedInEvent)
+{
+    L1USBDeviceNotificationHandler* handler1 = new L1USBDeviceNotificationHandler();
+    L1USBDeviceNotificationHandler* handler2 = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(handler1);
+    USBDeviceImpl->Register(handler2);
+    handler1->ResetEvents();
+    handler2->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_MASS_STORAGE;
+    testDevice.deviceName = "100/003";
+    testDevice.devicePath = "/dev/sdc";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(handler1->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedIn));
+    EXPECT_TRUE(handler2->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedIn));
+    EXPECT_EQ("100/003", handler1->GetLastPluggedInDeviceName());
+    EXPECT_EQ("100/003", handler2->GetLastPluggedInDeviceName());
+    
+    USBDeviceImpl->Unregister(handler1);
+    USBDeviceImpl->Unregister(handler2);
+    handler1->Release();
+    handler2->Release();
+}
+
+TEST_F(USBDeviceTest, MultipleNotificationHandlers_BothReceivePluggedOutEvent)
+{
+    L1USBDeviceNotificationHandler* handler1 = new L1USBDeviceNotificationHandler();
+    L1USBDeviceNotificationHandler* handler2 = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(handler1);
+    USBDeviceImpl->Register(handler2);
+    handler1->ResetEvents();
+    handler2->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_MASS_STORAGE;
+    testDevice.deviceName = "100/003";
+    testDevice.devicePath = "/dev/sdc";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(handler1->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedOut));
+    EXPECT_TRUE(handler2->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedOut));
+    EXPECT_EQ("100/003", handler1->GetLastPluggedOutDeviceName());
+    EXPECT_EQ("100/003", handler2->GetLastPluggedOutDeviceName());
+    
+    USBDeviceImpl->Unregister(handler1);
+    USBDeviceImpl->Unregister(handler2);
+    handler1->Release();
+    handler2->Release();
+}
+
+TEST_F(USBDeviceTest, UnregisteredHandler_DoesNotReceivePluggedInEvent)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_MASS_STORAGE;
+    testDevice.deviceName = "100/004";
+    testDevice.devicePath = "/dev/sdd";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_FALSE(notificationHandler->WaitForRequestStatus(500, USBDevice_OnDevicePluggedIn));
+    
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, UnregisteredHandler_DoesNotReceivePluggedOutEvent)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_MASS_STORAGE;
+    testDevice.deviceName = "100/004";
+    testDevice.devicePath = "/dev/sdd";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_FALSE(notificationHandler->WaitForRequestStatus(500, USBDevice_OnDevicePluggedOut));
+    
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, SequentialPlugInPlugOut_BothEventsReceived)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_MASS_STORAGE;
+    testDevice.deviceName = "100/005";
+    testDevice.devicePath = "/dev/sde";
+    
+    auto plugInJob = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED,
+        testDevice
+    );
+    plugInJob->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedIn));
+    EXPECT_EQ("100/005", notificationHandler->GetLastPluggedInDeviceName());
+    
+    notificationHandler->ResetEvents();
+    
+    auto plugOutJob = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT,
+        testDevice
+    );
+    plugOutJob->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedOut));
+    EXPECT_EQ("100/005", notificationHandler->GetLastPluggedOutDeviceName());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedIn_EmptyDevicePath_Success)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_AUDIO;
+    testDevice.deviceSubclass = 1;
+    testDevice.deviceName = "102/006";
+    testDevice.devicePath = "";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedIn));
+    EXPECT_EQ("102/006", notificationHandler->GetLastPluggedInDeviceName());
+    EXPECT_EQ("", notificationHandler->GetLastPluggedInDevicePath());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedOut_EmptyDevicePath_Success)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_AUDIO;
+    testDevice.deviceSubclass = 1;
+    testDevice.deviceName = "102/006";
+    testDevice.devicePath = "";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedOut));
+    EXPECT_EQ("102/006", notificationHandler->GetLastPluggedOutDeviceName());
+    EXPECT_EQ("", notificationHandler->GetLastPluggedOutDevicePath());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, RegisterSameHandlerTwice_OnlyOneNotification)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = LIBUSB_CLASS_MASS_STORAGE;
+    testDevice.deviceName = "100/007";
+    testDevice.devicePath = "/dev/sdf";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedIn));
+    EXPECT_EQ("100/007", notificationHandler->GetLastPluggedInDeviceName());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedIn_DeviceClassZero_Success)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = 0;
+    testDevice.deviceSubclass = 0;
+    testDevice.deviceName = "103/008";
+    testDevice.devicePath = "";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedIn));
+    EXPECT_EQ("103/008", notificationHandler->GetLastPluggedInDeviceName());
+    EXPECT_EQ(0, notificationHandler->GetLastPluggedInDeviceClass());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
+
+TEST_F(USBDeviceTest, OnDevicePluggedOut_DeviceClassZero_Success)
+{
+    L1USBDeviceNotificationHandler* notificationHandler = new L1USBDeviceNotificationHandler();
+    
+    USBDeviceImpl->Register(notificationHandler);
+    notificationHandler->ResetEvents();
+    
+    Exchange::IUSBDevice::USBDevice testDevice;
+    testDevice.deviceClass = 0;
+    testDevice.deviceSubclass = 0;
+    testDevice.deviceName = "103/008";
+    testDevice.devicePath = "";
+    
+    auto job = Plugin::USBDeviceImplementation::Job::Create(
+        USBDeviceImpl.operator->(),
+        Plugin::USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT,
+        testDevice
+    );
+    job->Dispatch();
+    
+    EXPECT_TRUE(notificationHandler->WaitForRequestStatus(1000, USBDevice_OnDevicePluggedOut));
+    EXPECT_EQ("103/008", notificationHandler->GetLastPluggedOutDeviceName());
+    EXPECT_EQ(0, notificationHandler->GetLastPluggedOutDeviceClass());
+    
+    USBDeviceImpl->Unregister(notificationHandler);
+    notificationHandler->Release();
+}
