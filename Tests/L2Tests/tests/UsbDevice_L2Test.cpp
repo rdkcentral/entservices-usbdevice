@@ -469,11 +469,12 @@ TEST_F(USBDeviceTest, devicePluggedInAndPluggedOut)
                 dev.device_address = MOCK_USB_DEVICE_ADDRESS_1;
                 dev.port_number = MOCK_USB_DEVICE_PORT_1;
 
-                libUSBHotPlugCbDeviceAttached(nullptr, &dev, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, 0);
 
                 message = "{\"device\":{\"deviceClass\":8,\"deviceSubclass\":8,\"deviceName\":\"100\\/001\",\"devicePath\":\"\\/dev\\/sda\"}}";
                 expected_status.FromString(message);
                 EXPECT_CALL(async_handler, OnDevicePluggedIn(MatchRequestStatus(expected_status)));
+
+                libUSBHotPlugCbDeviceAttached(nullptr, &dev, LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, 0);
 
                 signalled = notification.WaitForRequestStatus(JSON_TIMEOUT, USBDevice_onDevicePluggedIn, actual_usbDevice);
                 EXPECT_TRUE(signalled & USBDevice_onDevicePluggedIn);
