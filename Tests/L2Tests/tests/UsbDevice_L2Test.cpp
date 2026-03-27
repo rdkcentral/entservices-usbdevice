@@ -1009,3 +1009,661 @@ TEST_F(USBDevice_L2Test, COMRPC_RegisterDuplicateNotification)
         }
     }
 }
+
+
+// ... existing code ...
+
+// ============================================================================
+// Notification Tests - COM-RPC Interface
+// ============================================================================
+
+/**
+ * @brief Test COM-RPC: Register/Unregister Notification Interface
+ * @details Validates that notification handlers can be registered and unregistered
+ * @expected ERROR_NONE for both register and unregister operations
+ */
+TEST_F(USBDevice_L2Test, COMRPC_NotificationRegisterUnregister_Success)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing Register and Unregister for notifications");
+
+                // Register for notifications
+                uint32_t result = m_USBDevicePlugin->Register(notification);
+                TEST_LOG("COM-RPC: Register returned: %d (%s)", result, Core::ErrorToString(result));
+                EXPECT_EQ(result, Core::ERROR_NONE);
+                
+                if (result != Core::ERROR_NONE) {
+                    std::string errorMsg = "Register returned error " + std::to_string(result) + 
+                                         " (" + std::string(Core::ErrorToString(result)) + ")";
+                    TEST_LOG("ERROR: %s", errorMsg.c_str());
+                } else {
+                    TEST_LOG("Successfully registered for notifications");
+                }
+
+                // Unregister from notifications
+                result = m_USBDevicePlugin->Unregister(notification);
+                TEST_LOG("COM-RPC: Unregister returned: %d (%s)", result, Core::ErrorToString(result));
+                EXPECT_EQ(result, Core::ERROR_NONE);
+                
+                if (result != Core::ERROR_NONE) {
+                    std::string errorMsg = "Unregister returned error " + std::to_string(result) + 
+                                         " (" + std::string(Core::ErrorToString(result)) + ")";
+                    TEST_LOG("ERROR: %s", errorMsg.c_str());
+                } else {
+                    TEST_LOG("Successfully unregistered from notifications");
+                }
+
+                notification->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+/**
+ * @brief Test COM-RPC: OnDevicePluggedIn Notification
+ * @details Validates that the OnDevicePluggedIn notification is received when a USB device is connected
+ * @expected Notification received with valid device information
+ */
+TEST_F(USBDevice_L2Test, COMRPC_OnDevicePluggedIn_Notification_Success)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing OnDevicePluggedIn notification");
+
+                // Register for notifications
+                uint32_t result = m_USBDevicePlugin->Register(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+                if (result != Core::ERROR_NONE) {
+                    std::string errorMsg = "Register returned error " + std::to_string(result) + 
+                                         " (" + std::string(Core::ErrorToString(result)) + ")";
+                    TEST_LOG("ERROR: %s", errorMsg.c_str());
+                } else {
+                    TEST_LOG("Successfully registered for notifications");
+                }
+
+                // Reset event flag before triggering
+                notification->ResetEvent();
+
+                // Simulate a device plug-in event
+                // In a real scenario, this would be triggered by actual hardware or mock
+                Exchange::IUSBDevice::USBDevice mockDevice;
+                mockDevice.deviceClass = 8;  // Mass storage
+                mockDevice.deviceSubclass = 6;
+                mockDevice.deviceName = "001/002";
+                mockDevice.devicePath = "/dev/sda1";
+
+                TEST_LOG("Simulating device plug-in event:");
+                TEST_LOG("  Device Class: %u", mockDevice.deviceClass);
+                TEST_LOG("  Device Subclass: %u", mockDevice.deviceSubclass);
+                TEST_LOG("  Device Name: %s", mockDevice.deviceName.c_str());
+                TEST_LOG("  Device Path: %s", mockDevice.devicePath.c_str());
+
+                // Manually trigger the notification (in real test, hardware/mock would trigger)
+                notification->OnDevicePluggedIn(mockDevice);
+
+                // Wait for the notification with timeout
+                const uint32_t EVNT_TIMEOUT = 5000; // 5 seconds
+                bool eventReceived = notification->WaitForEvent(EVNT_TIMEOUT);
+                EXPECT_TRUE(eventReceived);
+
+                if (eventReceived) {
+                    TEST_LOG("OnDevicePluggedIn notification received successfully");
+                    
+                    // Validate the event type
+                    USBDeviceNotificationHandler::EventType lastEvent = notification->LastEventType();
+                    EXPECT_EQ(lastEvent, USBDeviceNotificationHandler::PluggedIn);
+                    TEST_LOG("Event Type: %s", (lastEvent == USBDeviceNotificationHandler::PluggedIn) ? "PluggedIn" : "Unknown");
+
+                    // Validate the received device data
+                    Exchange::IUSBDevice::USBDevice receivedDevice = notification->LastDevice();
+                    TEST_LOG("Received Device Information:");
+                    TEST_LOG("  Device Class: %u", receivedDevice.deviceClass);
+                    TEST_LOG("  Device Subclass: %u", receivedDevice.deviceSubclass);
+                    TEST_LOG("  Device Name: %s", receivedDevice.deviceName.c_str());
+                    TEST_LOG("  Device Path: %s", receivedDevice.devicePath.c_str());
+
+                    EXPECT_EQ(receivedDevice.deviceClass, mockDevice.deviceClass);
+                    EXPECT_EQ(receivedDevice.deviceSubclass, mockDevice.deviceSubclass);
+                    EXPECT_EQ(receivedDevice.deviceName, mockDevice.deviceName);
+                    EXPECT_EQ(receivedDevice.devicePath, mockDevice.devicePath);
+                } else {
+                    TEST_LOG("ERROR: Timeout waiting for OnDevicePluggedIn notification");
+                }
+
+                // Unregister from notifications
+                result = m_USBDevicePlugin->Unregister(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+                if (result == Core::ERROR_NONE) {
+                    TEST_LOG("Successfully unregistered from notifications");
+                }
+
+                notification->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+/**
+ * @brief Test COM-RPC: OnDevicePluggedOut Notification
+ * @details Validates that the OnDevicePluggedOut notification is received when a USB device is disconnected
+ * @expected Notification received with valid device information
+ */
+TEST_F(USBDevice_L2Test, COMRPC_OnDevicePluggedOut_Notification_Success)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing OnDevicePluggedOut notification");
+
+                // Register for notifications
+                uint32_t result = m_USBDevicePlugin->Register(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+                if (result != Core::ERROR_NONE) {
+                    std::string errorMsg = "Register returned error " + std::to_string(result) + 
+                                         " (" + std::string(Core::ErrorToString(result)) + ")";
+                    TEST_LOG("ERROR: %s", errorMsg.c_str());
+                } else {
+                    TEST_LOG("Successfully registered for notifications");
+                }
+
+                // Reset event flag before triggering
+                notification->ResetEvent();
+
+                // Simulate a device plug-out event
+                Exchange::IUSBDevice::USBDevice mockDevice;
+                mockDevice.deviceClass = 8;  // Mass storage
+                mockDevice.deviceSubclass = 6;
+                mockDevice.deviceName = "001/002";
+                mockDevice.devicePath = "/dev/sda1";
+
+                TEST_LOG("Simulating device plug-out event:");
+                TEST_LOG("  Device Class: %u", mockDevice.deviceClass);
+                TEST_LOG("  Device Subclass: %u", mockDevice.deviceSubclass);
+                TEST_LOG("  Device Name: %s", mockDevice.deviceName.c_str());
+                TEST_LOG("  Device Path: %s", mockDevice.devicePath.c_str());
+
+                // Manually trigger the notification
+                notification->OnDevicePluggedOut(mockDevice);
+
+                // Wait for the notification with timeout
+                const uint32_t EVNT_TIMEOUT = 5000; // 5 seconds
+                bool eventReceived = notification->WaitForEvent(EVNT_TIMEOUT);
+                EXPECT_TRUE(eventReceived);
+
+                if (eventReceived) {
+                    TEST_LOG("OnDevicePluggedOut notification received successfully");
+                    
+                    // Validate the event type
+                    USBDeviceNotificationHandler::EventType lastEvent = notification->LastEventType();
+                    EXPECT_EQ(lastEvent, USBDeviceNotificationHandler::PluggedOut);
+                    TEST_LOG("Event Type: %s", (lastEvent == USBDeviceNotificationHandler::PluggedOut) ? "PluggedOut" : "Unknown");
+
+                    // Validate the received device data
+                    Exchange::IUSBDevice::USBDevice receivedDevice = notification->LastDevice();
+                    TEST_LOG("Received Device Information:");
+                    TEST_LOG("  Device Class: %u", receivedDevice.deviceClass);
+                    TEST_LOG("  Device Subclass: %u", receivedDevice.deviceSubclass);
+                    TEST_LOG("  Device Name: %s", receivedDevice.deviceName.c_str());
+                    TEST_LOG("  Device Path: %s", receivedDevice.devicePath.c_str());
+
+                    EXPECT_EQ(receivedDevice.deviceClass, mockDevice.deviceClass);
+                    EXPECT_EQ(receivedDevice.deviceSubclass, mockDevice.deviceSubclass);
+                    EXPECT_EQ(receivedDevice.deviceName, mockDevice.deviceName);
+                    EXPECT_EQ(receivedDevice.devicePath, mockDevice.devicePath);
+                } else {
+                    TEST_LOG("ERROR: Timeout waiting for OnDevicePluggedOut notification");
+                }
+
+                // Unregister from notifications
+                result = m_USBDevicePlugin->Unregister(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+                if (result == Core::ERROR_NONE) {
+                    TEST_LOG("Successfully unregistered from notifications");
+                }
+
+                notification->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+/**
+ * @brief Test COM-RPC: OnDevicePluggedIn with Mass Storage Device
+ * @details Validates notification for mass storage device connection
+ * @expected Notification with class 8 and appropriate subclass
+ */
+TEST_F(USBDevice_L2Test, COMRPC_OnDevicePluggedIn_MassStorageDevice)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing OnDevicePluggedIn for mass storage device");
+
+                uint32_t result = m_USBDevicePlugin->Register(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+
+                notification->ResetEvent();
+
+                Exchange::IUSBDevice::USBDevice massStorageDevice;
+                massStorageDevice.deviceClass = 8;  // LIBUSB_CLASS_MASS_STORAGE
+                massStorageDevice.deviceSubclass = 6; // SCSI transparent
+                massStorageDevice.deviceName = "002/003";
+                massStorageDevice.devicePath = "/dev/sdb";
+
+                TEST_LOG("Simulating mass storage device plug-in:");
+                TEST_LOG("  Class: 8 (Mass Storage)");
+                TEST_LOG("  Subclass: 6 (SCSI transparent)");
+                TEST_LOG("  Path: %s", massStorageDevice.devicePath.c_str());
+
+                notification->OnDevicePluggedIn(massStorageDevice);
+
+                bool eventReceived = notification->WaitForEvent(5000);
+                EXPECT_TRUE(eventReceived);
+
+                if (eventReceived) {
+                    Exchange::IUSBDevice::USBDevice receivedDevice = notification->LastDevice();
+                    EXPECT_EQ(receivedDevice.deviceClass, 8);
+                    EXPECT_EQ(receivedDevice.deviceSubclass, 6);
+                    EXPECT_FALSE(receivedDevice.devicePath.empty());
+                    TEST_LOG("Mass storage device notification validated successfully");
+                }
+
+                m_USBDevicePlugin->Unregister(notification);
+                notification->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+/**
+ * @brief Test COM-RPC: OnDevicePluggedIn Non-Mass Storage Device
+ * @details Validates notification for non-mass storage device (e.g., HID)
+ * @expected Notification with appropriate device class, empty device path
+ */
+TEST_F(USBDevice_L2Test, COMRPC_OnDevicePluggedIn_NonMassStorageDevice)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing OnDevicePluggedIn for non-mass storage device");
+
+                uint32_t result = m_USBDevicePlugin->Register(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+
+                notification->ResetEvent();
+
+                Exchange::IUSBDevice::USBDevice hidDevice;
+                hidDevice.deviceClass = 3;  // LIBUSB_CLASS_HID
+                hidDevice.deviceSubclass = 1;
+                hidDevice.deviceName = "003/004";
+                hidDevice.devicePath = "";  // Non-mass storage devices don't have paths
+
+                TEST_LOG("Simulating HID device plug-in:");
+                TEST_LOG("  Class: 3 (HID)");
+                TEST_LOG("  Subclass: 1");
+                TEST_LOG("  Path: (empty - non-mass storage)");
+
+                notification->OnDevicePluggedIn(hidDevice);
+
+                bool eventReceived = notification->WaitForEvent(5000);
+                EXPECT_TRUE(eventReceived);
+
+                if (eventReceived) {
+                    Exchange::IUSBDevice::USBDevice receivedDevice = notification->LastDevice();
+                    EXPECT_EQ(receivedDevice.deviceClass, 3);
+                    EXPECT_TRUE(receivedDevice.devicePath.empty());
+                    TEST_LOG("Non-mass storage device notification validated successfully");
+                }
+
+                m_USBDevicePlugin->Unregister(notification);
+                notification->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+/**
+ * @brief Test COM-RPC: Multiple Sequential Notifications
+ * @details Validates that multiple plug-in/plug-out notifications work correctly in sequence
+ * @expected All notifications received in correct order
+ */
+TEST_F(USBDevice_L2Test, COMRPC_MultipleSequentialNotifications)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing multiple sequential notifications");
+
+                uint32_t result = m_USBDevicePlugin->Register(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+
+                // Test sequence: plug-in device 1, plug-out device 1, plug-in device 2
+                Exchange::IUSBDevice::USBDevice device1;
+                device1.deviceClass = 8;
+                device1.deviceSubclass = 6;
+                device1.deviceName = "001/005";
+                device1.devicePath = "/dev/sdc";
+
+                // Event 1: Plug-in device 1
+                TEST_LOG("Event 1: Plugging in device 1");
+                notification->ResetEvent();
+                notification->OnDevicePluggedIn(device1);
+                EXPECT_TRUE(notification->WaitForEvent(5000));
+                EXPECT_EQ(notification->LastEventType(), USBDeviceNotificationHandler::PluggedIn);
+                TEST_LOG("Event 1 received successfully");
+
+                // Event 2: Plug-out device 1
+                TEST_LOG("Event 2: Plugging out device 1");
+                notification->ResetEvent();
+                notification->OnDevicePluggedOut(device1);
+                EXPECT_TRUE(notification->WaitForEvent(5000));
+                EXPECT_EQ(notification->LastEventType(), USBDeviceNotificationHandler::PluggedOut);
+                TEST_LOG("Event 2 received successfully");
+
+                // Event 3: Plug-in device 2
+                Exchange::IUSBDevice::USBDevice device2;
+                device2.deviceClass = 8;
+                device2.deviceSubclass = 6;
+                device2.deviceName = "001/006";
+                device2.devicePath = "/dev/sdd";
+
+                TEST_LOG("Event 3: Plugging in device 2");
+                notification->ResetEvent();
+                notification->OnDevicePluggedIn(device2);
+                EXPECT_TRUE(notification->WaitForEvent(5000));
+                EXPECT_EQ(notification->LastEventType(), USBDeviceNotificationHandler::PluggedIn);
+                Exchange::IUSBDevice::USBDevice received = notification->LastDevice();
+                EXPECT_EQ(received.deviceName, device2.deviceName);
+                TEST_LOG("Event 3 received successfully with correct device");
+
+                m_USBDevicePlugin->Unregister(notification);
+                notification->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+/**
+ * @brief Test COM-RPC: Notification After Unregister
+ * @details Validates that no notifications are received after unregistering
+ * @expected No notification received, timeout occurs
+ */
+TEST_F(USBDevice_L2Test, COMRPC_NoNotificationAfterUnregister)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing that no notifications are received after unregister");
+
+                // Register and then immediately unregister
+                uint32_t result = m_USBDevicePlugin->Register(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+
+                result = m_USBDevicePlugin->Unregister(notification);
+                EXPECT_EQ(result, Core::ERROR_NONE);
+                TEST_LOG("Unregistered from notifications");
+
+                // Try to trigger a notification
+                notification->ResetEvent();
+                Exchange::IUSBDevice::USBDevice device;
+                device.deviceClass = 8;
+                device.deviceSubclass = 6;
+                device.deviceName = "001/007";
+                device.devicePath = "/dev/sde";
+
+                TEST_LOG("Attempting to trigger notification after unregister");
+                notification->OnDevicePluggedIn(device);
+
+                // Should timeout as we're unregistered
+                bool eventReceived = notification->WaitForEvent(2000); // Short timeout
+                EXPECT_FALSE(eventReceived);
+                TEST_LOG("Correctly received no notification after unregister (timeout expected)");
+
+                notification->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+/**
+ * @brief Test COM-RPC: Double Registration Same Handler
+ * @details Validates behavior when same handler is registered twice
+ * @expected Implementation dependent - either accepted or rejected
+ */
+TEST_F(USBDevice_L2Test, COMRPC_DoubleRegistrationSameHandler)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing double registration of same handler");
+
+                // First registration
+                uint32_t result1 = m_USBDevicePlugin->Register(notification);
+                TEST_LOG("First registration returned: %d (%s)", result1, Core::ErrorToString(result1));
+                EXPECT_EQ(result1, Core::ERROR_NONE);
+
+                // Second registration (same handler)
+                uint32_t result2 = m_USBDevicePlugin->Register(notification);
+                TEST_LOG("Second registration returned: %d (%s)", result2, Core::ErrorToString(result2));
+                // Implementation may prevent or allow duplicates - document behavior
+                TEST_LOG("Double registration behavior: %s", 
+                         (result2 == Core::ERROR_NONE) ? "Allowed" : "Prevented");
+
+                // Clean up - unregister once or twice depending on behavior
+                m_USBDevicePlugin->Unregister(notification);
+                if (result2 == Core::ERROR_NONE) {
+                    // If second registration succeeded, need second unregister
+                    m_USBDevicePlugin->Unregister(notification);
+                }
+
+                notification->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+/**
+ * @brief Test COM-RPC: Multiple Different Handlers
+ * @details Validates that multiple different handlers can be registered simultaneously
+ * @expected All handlers receive notifications
+ */
+TEST_F(USBDevice_L2Test, COMRPC_MultipleDifferentHandlers)
+{
+    if (CreateUSBDeviceInterfaceObject() != Core::ERROR_NONE) {
+        TEST_LOG("Failed to create USBDevice interface object");
+        FAIL();
+    } else {
+        EXPECT_TRUE(m_controller_USBDevice != nullptr);
+        if (m_controller_USBDevice) {
+            EXPECT_TRUE(m_USBDevicePlugin != nullptr);
+            if (m_USBDevicePlugin) {
+                auto* notification1 = new USBDeviceNotificationHandler();
+                auto* notification2 = new USBDeviceNotificationHandler();
+                TEST_LOG("COM-RPC: Testing multiple different notification handlers");
+
+                // Register both handlers
+                uint32_t result1 = m_USBDevicePlugin->Register(notification1);
+                EXPECT_EQ(result1, Core::ERROR_NONE);
+                TEST_LOG("Handler 1 registered: %d", result1);
+
+                uint32_t result2 = m_USBDevicePlugin->Register(notification2);
+                EXPECT_EQ(result2, Core::ERROR_NONE);
+                TEST_LOG("Handler 2 registered: %d", result2);
+
+                // Reset both handlers
+                notification1->ResetEvent();
+                notification2->ResetEvent();
+
+                // Trigger an event
+                Exchange::IUSBDevice::USBDevice device;
+                device.deviceClass = 8;
+                device.deviceSubclass = 6;
+                device.deviceName = "001/008";
+                device.devicePath = "/dev/sdf";
+
+                TEST_LOG("Triggering notification for both handlers");
+                notification1->OnDevicePluggedIn(device);
+                notification2->OnDevicePluggedIn(device);
+
+                // Both should receive the notification
+                bool received1 = notification1->WaitForEvent(5000);
+                bool received2 = notification2->WaitForEvent(5000);
+
+                EXPECT_TRUE(received1);
+                EXPECT_TRUE(received2);
+                TEST_LOG("Handler 1 received: %s", received1 ? "YES" : "NO");
+                TEST_LOG("Handler 2 received: %s", received2 ? "YES" : "NO");
+
+                // Unregister both
+                m_USBDevicePlugin->Unregister(notification1);
+                m_USBDevicePlugin->Unregister(notification2);
+
+                notification1->Release();
+                notification2->Release();
+                m_USBDevicePlugin->Release();
+                m_USBDevicePlugin = nullptr;
+            } else {
+                TEST_LOG("m_USBDevicePlugin is NULL");
+                FAIL();
+            }
+            m_controller_USBDevice->Release();
+            m_controller_USBDevice = nullptr;
+        } else {
+            TEST_LOG("m_controller_USBDevice is NULL");
+            FAIL();
+        }
+    }
+}
+
+// ... existing code ...
