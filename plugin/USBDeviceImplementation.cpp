@@ -449,7 +449,7 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
                                             (usbDeviceName.find(deviceSerialNumber) != std::string::npos))
                                         {
 										    devPath = "/dev/" + deviceName;
-											LOGINFO("predebug setting up devPath %s", devPath);
+											LOGINFO("predebug setting up devPath %s", devPath.c_str());
                                             pathFound = true;
                                             break;
                                         }
