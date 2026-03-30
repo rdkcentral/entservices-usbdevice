@@ -334,6 +334,7 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
     }
     else
     {
+		LOGINFO("predebug Received serial number %s", deviceSerialNumber);
         dir = opendir(dirPath.c_str());
 
         if (!dir)
@@ -344,13 +345,13 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
         {
             // Iterate through directory entries
             struct dirent* blockDirEntry = nullptr;
-
+      
             while ((false == pathFound) && (((blockDirEntry = readdir(dir)) != nullptr)))
             {
                 if (string(blockDirEntry->d_name) != "." && string(blockDirEntry->d_name) != "..")
                 {
                     string deviceName(blockDirEntry->d_name);
-
+                     LOGINFO("predebug deviceName %s", deviceName.c_str());
                     // Check if the directory name starts with 'sd'
                     if (deviceName.rfind("sd", 0) == 0)
                     {
@@ -361,6 +362,7 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
                         string modelName;
                         string blockDeviceName;
 
+						LOGINFO("predebug reading vendor file");
                         // Open the vendor file
                         std::ifstream vendorFile(vendorPath);
 
@@ -411,7 +413,7 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
                         {
                             modelName.erase(end + 1);
                         }
-
+                        LOGINFO("predebug vendorName %s, modelName %s", vendorName.c_str(), modelName.c_str());
                         blockDeviceName = string("usb-") + vendorName + string("_") + modelName + string("_");
 
                         const string diskDirPath = string(PLUGIN_USBDEVICE_DEV_DISK_PATH);
@@ -433,19 +435,21 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
                                 if (diskDirEntry->d_type == DT_LNK && string(diskDirEntry->d_name) != "." && string(diskDirEntry->d_name) != "..")
                                 {
                                     string usbDeviceName(diskDirEntry->d_name);
-
-                                    // Check  the directory name starts with blockDeviceName Ex: usb-Generic_Flash_Disk_
+                                    LOGINFO("predebug usbDevicename %s", usbDeviceName.c_str());
+									// Check  the directory name starts with blockDeviceName Ex: usb-Generic_Flash_Disk_
                                     if (usbDeviceName.rfind("usb", 0) == 0)
                                     {
                                         string symlinkFile = diskDirPath + usbDeviceName;
                                         boost::filesystem::path symlink_path(symlinkFile);
 
                                         boost::filesystem::path target_path = boost::filesystem::read_symlink(symlink_path);
-
+                                        LOGINFO("predebug target_path %s symlinkfile %s", target_path.c_str(), symlinkFile.c_str());
+										 LOGINFO("predebug usbDeviceName %s deviceSerialNumber", usbDeviceName.c_str(),deviceSerialNumber.c_str());
                                         if ((target_path.string().find(deviceName) != std::string::npos) &&
                                             (usbDeviceName.find(deviceSerialNumber) != std::string::npos))
                                         {
-                                            devPath = "/dev/" + deviceName;
+										    devPath = "/dev/" + deviceName;
+											LOGINFO("predebug setting up devPath %s", devPath);
                                             pathFound = true;
                                             break;
                                         }
