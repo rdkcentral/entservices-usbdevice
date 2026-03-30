@@ -444,7 +444,7 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
 
                                         boost::filesystem::path target_path = boost::filesystem::read_symlink(symlink_path);
                                         LOGINFO("predebug target_path %s symlinkfile %s", target_path.c_str(), symlinkFile.c_str());
-										 LOGINFO("predebug usbDeviceName %s deviceSerialNumber", usbDeviceName.c_str(),deviceSerialNumber.c_str());
+										 LOGINFO("predebug usbDeviceName %s deviceSerialNumber %s", usbDeviceName.c_str(), deviceSerialNumber.c_str());
                                         if ((target_path.string().find(deviceName) != std::string::npos) &&
                                             (usbDeviceName.find(deviceSerialNumber) != std::string::npos))
                                         {
