@@ -334,7 +334,7 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
     }
     else
     {
-		LOGINFO("predebug Received serial number %s", deviceSerialNumber);
+        LOGINFO("predebug Received serial number %s", deviceSerialNumber.c_str());
         dir = opendir(dirPath.c_str());
 
         if (!dir)
