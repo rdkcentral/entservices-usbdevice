@@ -1,8 +1,17 @@
 on:
+  # Keep the weekly schedule (you can delete this block if you truly want manual-only)
   schedule:
-    # Weekly at 00:00 (midnight) UTC every Monday
-    - cron: "0 0 * * 1"
-  workflow_dispatch: {}
+    - cron: "0 0 * * 1" # Mondays 00:00 UTC
+  workflow_dispatch:
+    inputs:
+      assignee:
+        description: "GitHub username to assign the issue to (e.g., copilot)"
+        required: false
+        default: "copilot"
+      title_prefix:
+        description: "Issue title prefix"
+        required: false
+        default: "Coverity Agent Session (manual test)"
 
 permissions:
   issues: write
@@ -15,14 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create weekly Coverity agent-session issue
+      - name: Create Coverity agent-session issue and assign it
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ASSIGNEE: ${{ inputs.assignee || 'copilot' }}
+          TITLE_PREFIX: ${{ inputs.title_prefix || 'Weekly Coverity Agent Session' }}
         run: |
           set -euo pipefail
 
           DATE="$(date -u +%Y-%m-%d)"
-          TITLE="Weekly Coverity Agent Session - ${DATE}"
+          TITLE="${TITLE_PREFIX} - ${DATE}"
 
           AGENT_MD=".github/agents/coverity-analysis.agent.md"
           if [ ! -f "$AGENT_MD" ]; then
@@ -32,7 +43,7 @@ jobs:
 
           BODY_FILE="$(mktemp)"
           {
-            echo "Auto-created by GitHub Actions on a weekly schedule (00:00 UTC Mondays)."
+            echo "Auto-created by GitHub Actions."
             echo
             echo "## Agent definition"
             echo
@@ -42,12 +53,21 @@ jobs:
             cat "$AGENT_MD"
             echo "----"
             echo
-            echo "## Weekly run request"
+            echo "## Run request"
             echo
-            echo "@copilot Please start an agent session for this repo using the agent definition above and run the weekly Coverity analysis tasks."
+            echo "@copilot Please start an agent session for this repo using the agent definition above and run the Coverity analysis tasks."
           } > "$BODY_FILE"
 
-          gh issue create \
-            --repo "${GITHUB_REPOSITORY}" \
-            --title "$TITLE" \
-            --body-file "$BODY_FILE"
+          # Create issue and capture number
+          ISSUE_URL="$(gh issue create --repo "${GITHUB_REPOSITORY}" --title "$TITLE" --body-file "$BODY_FILE")"
+          echo "Created: $ISSUE_URL"
+
+          ISSUE_NUMBER="$(echo "$ISSUE_URL" | sed -n 's#.*/issues/\([0-9][0-9]*\)$#\1#p')"
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "Failed to parse issue number from URL: $ISSUE_URL"
+            exit 1
+          fi
+
+          # Assign to Copilot (or whatever username you pass as input)
+          gh issue edit "$ISSUE_NUMBER" --repo "${GITHUB_REPOSITORY}" --add-assignee "$ASSIGNEE"
+          echo "Assigned issue #$ISSUE_NUMBER to $ASSIGNEE"
