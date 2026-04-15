@@ -591,11 +591,13 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
                             pathFound = findBlockDevicePathByUsbAddress(dirPath, deviceName, busNumber, devAddress, devPath);
                         }
                     }
-                    else {
+                    else
+                    {
                         LOGINFO("###_DEBUG_### Skipping non-block device: %s", deviceName.c_str());
                     }
                 }
-                else {
+                else
+                {
                     LOGINFO("###_DEBUG_### Skipping directory entry: %s", blockDirEntry->d_name ? blockDirEntry->d_name : "UnknownEntry");
                 }
             }
