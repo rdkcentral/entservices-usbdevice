@@ -48,6 +48,49 @@
 namespace WPEFramework {
 namespace Plugin {
 
+bool USBDeviceImplementation::findUsbAddressFiles(const string& dirPath, const string& deviceName, string& busnumPath, string& devnumPath)
+{
+    bool result = false;
+    try
+    {
+        const boost::filesystem::path devicePath = boost::filesystem::path(dirPath) / deviceName / "device";
+        boost::filesystem::path currentPath = boost::filesystem::canonical(devicePath);
+        int maxTraversalDepth = 10; // To prevent infinite loops, limit the number of parent directories to traverse
+
+        LOGINFO("###_DEBUG_### Resolved block device path: %s", currentPath.c_str());
+
+        while (!currentPath.empty() && maxTraversalDepth-- > 0)
+        {
+            const boost::filesystem::path candidateBusnumPath = currentPath / PLUGIN_USBDEVICE_BUS_NUM;
+            const boost::filesystem::path candidateDevnumPath = currentPath / PLUGIN_USBDEVICE_DEV_ADDR;
+
+            LOGINFO("###_DEBUG_### Checking sysfs node for USB address files: %s", currentPath.c_str());
+
+            if (boost::filesystem::is_regular_file(candidateBusnumPath) && boost::filesystem::is_regular_file(candidateDevnumPath))
+            {
+                busnumPath = candidateBusnumPath.string();
+                devnumPath = candidateDevnumPath.string();
+                result = true;
+                LOGINFO("###_DEBUG_### Found busnum and devnum files: %s, %s", busnumPath.c_str(), devnumPath.c_str());
+                break;
+            }
+
+            if (currentPath == currentPath.root_path())
+            {
+                break;
+            }
+
+            currentPath = currentPath.parent_path();
+        }
+    }
+    catch (const boost::filesystem::filesystem_error& err)
+    {
+        LOGERR("Error resolving sysfs path for device %s: %s", deviceName.c_str(), err.what());
+    }
+
+    return result;
+}
+
 bool USBDeviceImplementation::getUSBDeviceSysfsPath(libusb_device *pDev, string& sysfsPath)
 {
     uint8_t devPath[8] = {0};
@@ -92,6 +135,7 @@ void USBDeviceImplementation::trimTrailingCharacter(string& value, const char ch
 bool USBDeviceImplementation::findBlockDevicePathByDiskId(const string& diskDirPath, const string& deviceName, const string& deviceSerialNumber, string& devPath)
 {
     DIR* diskDir = opendir(diskDirPath.c_str());
+    bool pathFound = false;
 
     LOGINFO("###_DEBUG_### Looking for disk devices in %s", diskDirPath.c_str());
 
@@ -138,8 +182,8 @@ bool USBDeviceImplementation::findBlockDevicePathByDiskId(const string& diskDirP
             {
                 devPath = "/dev/" + deviceName;
                 LOGINFO("###_DEBUG_### Found matching USB storage device. Device path: %s", devPath.c_str());
-                closedir(diskDir);
-                return true;
+                pathFound = true;
+                break;
             }
         }
         catch (const boost::filesystem::filesystem_error& err)
@@ -148,23 +192,26 @@ bool USBDeviceImplementation::findBlockDevicePathByDiskId(const string& diskDirP
         }
     }
 
-    closedir(diskDir);
-    return false;
+    if (diskDir) {
+        closedir(diskDir);
+    }
+
+    return pathFound;
 }
 
 bool USBDeviceImplementation::findBlockDevicePathByUsbAddress(const string& dirPath, const string& deviceName, uint8_t busNumber, uint8_t devAddress, string& devPath)
 {
     bool pathFound = false;
-    // Walk up: /sys/block/<dev>/device symlinks to the SCSI LUN (0:0:0:0).
-    // sysfs depth from LUN to USB device node:
-    //   LUN(0:0:0:0) -> target -> host -> USB interface (X-Y:1.0) -> USB device (X-Y)
-    // So we need 4 levels up to reach the USB device node which holds 'busnum' and 'devnum'.
-    const string usbDevNodeBase = dirPath + "/" + deviceName + "/device/../../../../";
+    string busnumPath;
+    string devnumPath;
 
-    const string busnumPath = usbDevNodeBase + "busnum";
-    const string devnumPath = usbDevNodeBase + "devnum";
+    if (!findUsbAddressFiles(dirPath, deviceName, busnumPath, devnumPath))
+    {
+        LOGERR("Unable to locate busnum/devnum sysfs files for device:[%s]", deviceName.c_str());
+        return false;
+    }
 
-    LOGINFO("###_DEBUG_### Checking busnum/devnum at:[%s]", usbDevNodeBase.c_str());
+    LOGINFO("###_DEBUG_### Using busnum path:[%s] and devnum path:[%s]", busnumPath.c_str(), devnumPath.c_str());
 
     std::ifstream busnumFile(busnumPath);
     if (!busnumFile.is_open()){
@@ -436,14 +483,9 @@ int USBDeviceImplementation::libUSBHotPlugCallbackDeviceDetached(libusb_context 
       return 0;
 }
 
-void USBDeviceImplementation::getDeviceSerialNumber(libusb_device *pDev, string &serialNumber)
+void USBDeviceImplementation::getDeviceSerialNumber(const string& sysfsPath, string& serialNumber)
 {
     char path[256] = {0};
-    string sysfsPath = "";
-    if (!getUSBDeviceSysfsPath(pDev, sysfsPath))
-    {
-        return;
-    }
 
     std::snprintf(path, sizeof(path), "%s/%s/serial", PLUGIN_USBDEVICE_PATH, sysfsPath.c_str());
 
@@ -484,16 +526,27 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
     bool pathFound = false;
     const uint8_t busNumber = libusb_get_bus_number(pDev);
     const uint8_t devAddress = libusb_get_device_address(pDev);
+    string sysfsPath = "";
+
+    // Get the Sysfs Path
+    getUSBDeviceSysfsPath(pDev, sysfsPath);
+
+    if (sysfsPath.empty())
+    {
+        LOGERR("Failed to get sysfs path for device");
+        return;
+    }
 
     // Get the device serial number
-    getDeviceSerialNumber(pDev, deviceSerialNumber);
+    getDeviceSerialNumber(sysfsPath, deviceSerialNumber);
     LOGINFO("###_DEBUG_### Device Serial Number: %s", deviceSerialNumber.c_str());
-
+#if 0
     if (deviceSerialNumber.empty())
     {
         LOGERR(" Failed read Serail Number");
     }
     else
+#endif
     {
         LOGINFO("###_DEBUG_### Looking for block device with serial number: %s", deviceSerialNumber.c_str());
         dir = opendir(dirPath.c_str());
@@ -585,7 +638,8 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
                         LOGINFO("###_DEBUG_### Constructed block device name prefix: %s", blockDeviceName.c_str());
 
                         pathFound = findBlockDevicePathByDiskId(diskDirPath, deviceName, deviceSerialNumber, devPath);
-                        if (!pathFound)
+                        devPath.clear();
+                        //if (!pathFound)
                         {
                             LOGWARN("Failed to find block device path by disk id, trying to find by USB address");
                             pathFound = findBlockDevicePathByUsbAddress(dirPath, deviceName, busNumber, devAddress, devPath);
