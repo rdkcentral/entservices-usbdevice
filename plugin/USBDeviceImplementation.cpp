@@ -17,7 +17,6 @@
 * limitations under the License.
 */
 
-
 #include "USBDeviceImplementation.h"
 #include <sys/prctl.h>
 #include "UtilsJsonRpc.h"
