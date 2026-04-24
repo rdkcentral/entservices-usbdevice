@@ -144,7 +144,6 @@ namespace Plugin {
         bool getUSBDeviceSysfsPath(libusb_device *pDev, string& sysfsPath);
         void trimTrailingCharacter(string& value, const char character);
         bool findUsbAddressFiles(const string& dirPath, const string& deviceName, string& busnumPath, string& devnumPath);
-        bool findBlockDevicePathByDiskId(const string& diskDirPath, const string& deviceName, const string& deviceSerialNumber, string& devPath);
         bool findBlockDevicePathByUsbAddress(const string& dirPath, const string& deviceName, uint8_t busNumber, uint8_t devAddress, string& devPath);
         void getUSBDevicClassFromInterfaceDescriptor(libusb_device *pDev, uint8_t &bDeviceClass, uint8_t &bDeviceSubClass);
         void getDevicePathFromDevice(libusb_device *pDev, string &devPath, string& deviceSerialNumber);
