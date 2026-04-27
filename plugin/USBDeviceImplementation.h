@@ -141,9 +141,14 @@ namespace Plugin {
         void Dispatch(Event event, const Exchange::IUSBDevice::USBDevice usbDevice);
         uint32_t libUSBInit(void);
         void libUSBClose(void);
+        bool getUSBDeviceSysfsPath(libusb_device *pDev, string& sysfsPath);
+        void trimTrailingCharacter(string& value, const char character);
+        bool findUsbAddressFiles(const string& dirPath, const string& deviceName, string& busnumPath, string& devnumPath);
+        bool findBlockDevicePathByUsbAddress(const string& dirPath, const string& deviceName, uint8_t busNumber, uint8_t devAddress, string& devPath);
         void getUSBDevicClassFromInterfaceDescriptor(libusb_device *pDev, uint8_t &bDeviceClass, uint8_t &bDeviceSubClass);
         void getDevicePathFromDevice(libusb_device *pDev, string &devPath, string& deviceSerialNumber);
-        void getDeviceSerialNumber(libusb_device *pDev, string &serialNumber);
+        //void getDeviceSerialNumber(libusb_device *pDev, string &serialNumber);
+        void getDeviceSerialNumber(const string& sysfsPath , string &serialNumber);
         uint32_t getUSBDescriptorValue(libusb_device_handle *handle, uint16_t languageID, int descriptorIndex, std::string &stringDescriptor);
         uint32_t getUSBExtInfoStructFromDeviceDescriptor(libusb_device *pDev,
                                                          struct libusb_device_descriptor *pDesc,
