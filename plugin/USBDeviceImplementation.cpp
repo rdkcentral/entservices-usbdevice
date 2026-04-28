@@ -440,7 +440,6 @@ void USBDeviceImplementation::getDeviceSerialNumber(const string& sysfsPath, str
 void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, string &devPath, string& deviceSerialNumber)
 {
     const string dirPath = string(PLUGIN_USBDEVICE_BLOCKPATH);
-    const string diskDirPath = string(PLUGIN_USBDEVICE_DEV_DISK_PATH);
     DIR* dir = nullptr;
     bool pathFound = false;
     const uint8_t busNumber = libusb_get_bus_number(pDev);
