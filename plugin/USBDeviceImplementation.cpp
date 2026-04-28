@@ -55,6 +55,20 @@
 namespace WPEFramework {
 namespace Plugin {
 
+// findUsbAddressFiles
+// Traverses the sysfs symlink chain for a block device to locate the USB busnum/devnum files.
+//
+// Parameters:
+//   dirPath    [in]  - Base sysfs block device directory.
+//                      Example: "/sys/block"
+//   deviceName [in]  - Block device name as seen under dirPath.
+//                      Example: "sda"
+//   busnumPath [out] - Absolute path to the sysfs 'busnum' file found for the device.
+//                      Example: "/sys/devices/pci0000:00/0000:00:14.0/usb1/1-1/busnum"
+//   devnumPath [out] - Absolute path to the sysfs 'devnum' file found for the device.
+//                      Example: "/sys/devices/pci0000:00/0000:00:14.0/usb1/1-1/devnum"
+//
+// Returns: true if both busnum and devnum files were found, false otherwise.
 bool USBDeviceImplementation::findUsbAddressFiles(const string& dirPath, const string& deviceName, string& busnumPath, string& devnumPath)
 {
     int maxTraversalDepth = PLUGIN_USBDEVICE_MAX_TRAVERSAL_DEPTH; // To prevent infinite loops, limit the number of parent directories to traverse
@@ -100,6 +114,18 @@ bool USBDeviceImplementation::findUsbAddressFiles(const string& dirPath, const s
     return result;
 }
 
+// getUSBDeviceSysfsPath
+// Builds the sysfs path string for a libusb device using its bus number and port path.
+//
+// Parameters:
+//   pDev     [in]  - Pointer to the libusb_device.
+//   sysfsPath [out] - Constructed sysfs path string for the device.
+//                     Format: "<busNum>-<port>[.<port>...]".
+//                     Example (single port):  "1-2"       (bus 1, port 2)
+//                     Example (hub port):     "1-2.3"     (bus 1, port 2, hub port 3)
+//                     Example (nested hub):   "2-1.4.2"   (bus 2, port 1, hub port 4, hub port 2)
+//
+// Returns: true if the path was built successfully, false if port numbers could not be retrieved.
 bool USBDeviceImplementation::getUSBDeviceSysfsPath(libusb_device *pDev, string& sysfsPath)
 {
     uint8_t devPath[8] = {0};
@@ -122,6 +148,23 @@ bool USBDeviceImplementation::getUSBDeviceSysfsPath(libusb_device *pDev, string&
     return true;
 }
 
+// findBlockDevicePathByUsbAddress
+// Verifies that a block device under dirPath belongs to a specific USB device by
+// comparing the busnum/devnum sysfs files against the expected bus number and device address.
+//
+// Parameters:
+//   dirPath    [in]  - Base sysfs block device directory.
+//                      Example: "/sys/block"
+//   deviceName [in]  - Block device name to check.
+//                      Example: "sda"
+//   busNumber  [in]  - USB bus number obtained from libusb (libusb_get_bus_number).
+//                      Example: 1
+//   devAddress [in]  - USB device address obtained from libusb (libusb_get_device_address).
+//                      Example: 5
+//   devPath    [out] - Block device node path if the USB address matches.
+//                      Example: "/dev/sda"
+//
+// Returns: true if the block device matches the given USB bus/device address, false otherwise.
 bool USBDeviceImplementation::findBlockDevicePathByUsbAddress(const string& dirPath, const string& deviceName, uint8_t busNumber, uint8_t devAddress, string& devPath)
 {
     bool pathFound = false;
@@ -407,6 +450,17 @@ int USBDeviceImplementation::libUSBHotPlugCallbackDeviceDetached(libusb_context 
       return 0;
 }
 
+// getDeviceSerialNumber
+// Reads the USB device serial number from the sysfs 'serial' attribute file.
+// The full sysfs path is constructed as: PLUGIN_USBDEVICE_PATH/<sysfsPath>/serial
+//
+// Parameters:
+//   sysfsPath    [in]  - Sysfs path of the USB device (as built by getUSBDeviceSysfsPath).
+//                        Example: "1-2"     -> reads "/sys/bus/usb/devices/1-2/serial"
+//                        Example: "2-1.4.2" -> reads "/sys/bus/usb/devices/2-1.4.2/serial"
+//   serialNumber [out] - Serial number string read from the sysfs file.
+//                        Example: "0123456789ABCDEF"
+//                        Empty string if the file does not exist or the device has no serial number.
 void USBDeviceImplementation::getDeviceSerialNumber(const string& sysfsPath, string& serialNumber)
 {
     char path[256] = {0};
