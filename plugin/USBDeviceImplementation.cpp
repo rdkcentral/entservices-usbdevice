@@ -38,6 +38,7 @@
 #endif /* defined(RDK_SERVICE_L2_TEST) || defined(RDK_SERVICES_L1_TEST) */
 
 #define PLUGIN_USBDEVICE_DEV_DISK_PATH "/dev/disk/by-id/"
+#define PLUGIN_USBDEVICE_MAX_TRAVERSAL_DEPTH 10 // Maximum parent directories to traverse when searching for busnum/devnum files
 /**
 *   @brief length of the usb string descriptor header
 */
@@ -56,7 +57,7 @@ namespace Plugin {
 
 bool USBDeviceImplementation::findUsbAddressFiles(const string& dirPath, const string& deviceName, string& busnumPath, string& devnumPath)
 {
-    int maxTraversalDepth = 10; // To prevent infinite loops, limit the number of parent directories to traverse
+    int maxTraversalDepth = PLUGIN_USBDEVICE_MAX_TRAVERSAL_DEPTH; // To prevent infinite loops, limit the number of parent directories to traverse
     bool result = false;
 
     try
