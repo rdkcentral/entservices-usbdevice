@@ -84,7 +84,10 @@ class USBDeviceNotificationHandler : public Exchange::IUSBDevice::INotification 
         END_INTERFACE_MAP
 
     public:
-        USBDeviceNotificationHandler(){}
+        USBDeviceNotificationHandler()
+            : m_event_signalled(USBDevice_StateInvalid)
+            , m_usb_device{}
+        {}
         ~USBDeviceNotificationHandler(){}
 
         void OnDevicePluggedIn(const Exchange::IUSBDevice::USBDevice &device)
@@ -188,8 +191,9 @@ protected:
 };
 
 USBDeviceTest:: USBDeviceTest():L2TestMocks()
-        ,m_controller_usbdevice(nullptr)
-        ,m_usbdeviceplugin(nullptr)
+    ,m_event_signalled(USBDevice_StateInvalid)
+    ,m_controller_usbdevice(nullptr)
+    ,m_usbdeviceplugin(nullptr)
 {
         Core::JSONRPC::Message message;
         string response;
@@ -315,6 +319,22 @@ void USBDeviceTest::Mock_SetDeviceDesc(uint8_t bus_number, uint8_t device_addres
         }
         outModelStream << "Flash Disk" << std::endl;
         outModelStream.close();
+
+        std::string busnumFileName = "/tmp/block/sda/device/busnum";
+        std::ofstream busnumOutStream(busnumFileName);
+        if (!busnumOutStream) {
+            TEST_LOG("Error opening file for writing!");
+        }
+        busnumOutStream << (int)bus_number << std::endl;
+        busnumOutStream.close();
+
+        std::string devnumFileName = "/tmp/block/sda/device/devnum";
+        std::ofstream devnumOutStream(devnumFileName);
+        if (!devnumOutStream) {
+            TEST_LOG("Error opening file for writing!");
+        }
+        devnumOutStream << (int)device_address << std::endl;
+        devnumOutStream.close();
     }
 
     if (device_address == MOCK_USB_DEVICE_ADDRESS_2)
@@ -336,6 +356,22 @@ void USBDeviceTest::Mock_SetDeviceDesc(uint8_t bus_number, uint8_t device_addres
         }
         outModelStream << "Transcend_16GB" << std::endl;
         outModelStream.close();
+
+        std::string busnumFileName = "/tmp/block/sdb/device/busnum";
+        std::ofstream busnumOutStream(busnumFileName);
+        if (!busnumOutStream) {
+            TEST_LOG("Error opening file for writing!");
+        }
+        busnumOutStream << (int)bus_number << std::endl;
+        busnumOutStream.close();
+
+        std::string devnumFileName = "/tmp/block/sdb/device/devnum";
+        std::ofstream devnumOutStream(devnumFileName);
+        if (!devnumOutStream) {
+            TEST_LOG("Error opening file for writing!");
+        }
+        devnumOutStream << (int)device_address << std::endl;
+        devnumOutStream.close();
     }
 }
 
