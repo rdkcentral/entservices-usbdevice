@@ -84,7 +84,10 @@ class USBDeviceNotificationHandler : public Exchange::IUSBDevice::INotification 
         END_INTERFACE_MAP
 
     public:
-        USBDeviceNotificationHandler(){}
+        USBDeviceNotificationHandler()
+            : m_event_signalled(USBDevice_StateInvalid)
+            , m_usb_device{}
+        {}
         ~USBDeviceNotificationHandler(){}
 
         void OnDevicePluggedIn(const Exchange::IUSBDevice::USBDevice &device)
@@ -188,8 +191,9 @@ protected:
 };
 
 USBDeviceTest:: USBDeviceTest():L2TestMocks()
-        ,m_controller_usbdevice(nullptr)
-        ,m_usbdeviceplugin(nullptr)
+    ,m_event_signalled(USBDevice_StateInvalid)
+    ,m_controller_usbdevice(nullptr)
+    ,m_usbdeviceplugin(nullptr)
 {
         Core::JSONRPC::Message message;
         string response;
