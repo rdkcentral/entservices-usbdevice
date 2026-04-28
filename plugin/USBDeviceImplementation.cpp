@@ -474,7 +474,8 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
             if (string(blockDirEntry->d_name) != "." && string(blockDirEntry->d_name) != "..")
             {
                 string deviceName(blockDirEntry->d_name);
-                // Check if the directory name starts with 'sd'
+
+		// Check if the directory name starts with 'sd'
                 if (deviceName.rfind("sd", 0) == 0)
                 {
                     pathFound = findBlockDevicePathByUsbAddress(dirPath, deviceName, busNumber, devAddress, devPath);
