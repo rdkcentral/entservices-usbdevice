@@ -458,23 +458,22 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
     // Get the device serial number
     getDeviceSerialNumber(sysfsPath, deviceSerialNumber);
     LOGINFO("Sysfs Path:[%s], Bus Number:[%u], Device Address:[%u] Serial Number:[%s]", sysfsPath.c_str(), busNumber, devAddress, deviceSerialNumber.c_str());
+    dir = opendir(dirPath.c_str());
+
+    if (!dir)
     {
-        dir = opendir(dirPath.c_str());
+        LOGERR("Error opening directory: %s", dirPath.c_str());
+    }
+    else
+    {
+        // Iterate through directory entries
+        struct dirent* blockDirEntry = nullptr;
 
-        if (!dir)
+        while ((false == pathFound) && (((blockDirEntry = readdir(dir)) != nullptr)))
         {
-            LOGERR("Error opening directory: %s", dirPath.c_str());
-        }
-        else
-        {
-            // Iterate through directory entries
-            struct dirent* blockDirEntry = nullptr;
-
-            while ((false == pathFound) && (((blockDirEntry = readdir(dir)) != nullptr)))
+            if (string(blockDirEntry->d_name) != "." && string(blockDirEntry->d_name) != "..")
             {
-                if (string(blockDirEntry->d_name) != "." && string(blockDirEntry->d_name) != "..")
-                {
-                    string deviceName(blockDirEntry->d_name);
+                string deviceName(blockDirEntry->d_name);
 
                     // Check if the directory name starts with 'sd'
                     if (deviceName.rfind("sd", 0) == 0)
