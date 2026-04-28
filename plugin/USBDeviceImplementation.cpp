@@ -492,6 +492,23 @@ void USBDeviceImplementation::getDeviceSerialNumber(const string& sysfsPath, str
     }
 }
 
+// getDevicePathFromDevice
+// Resolves the block device path and serial number for a USB mass storage device
+// by scanning the block device directory and matching USB bus/device address.
+//
+// Parameters:
+//   pDev               [in]  - Pointer to the libusb_device to look up.
+//   devPath            [out] - Block device node path if a matching entry is found.
+//                              Example: "/dev/sda"
+//                              Empty string if no matching block device is found.
+//   deviceSerialNumber [out] - Serial number of the USB device read from sysfs.
+//                              Example: "0123456789ABCDEF"
+//                              Empty string if the device has no serial number or the sysfs file is absent.
+//
+// Notes:
+//   - Internally uses getUSBDeviceSysfsPath to build the sysfs path (e.g. "1-2" or "2-1.4.2").
+//   - Scans PLUGIN_USBDEVICE_BLOCKPATH (e.g. "/sys/block") for entries starting with "sd"
+//     (e.g. "sda", "sdb") and calls findBlockDevicePathByUsbAddress to match each one.
 void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, string &devPath, string& deviceSerialNumber)
 {
     const string dirPath = string(PLUGIN_USBDEVICE_BLOCKPATH);
