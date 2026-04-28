@@ -38,13 +38,19 @@
 #endif /* defined(RDK_SERVICE_L2_TEST) || defined(RDK_SERVICES_L1_TEST) */
 
 #define PLUGIN_USBDEVICE_DEV_DISK_PATH "/dev/disk/by-id/"
-#define PLUGIN_USBDEVICE_VENDOR_PATH "device/vendor"
-#define PLUGIN_USBDEVICE_MODEL_PATH "device/model"
-
 /**
 *   @brief length of the usb string descriptor header
 */
 #define USB_STRING_DESC_HEADER_LENGTH 2
+
+//#define ENABLE_LOGGING 1
+
+#if defined(ENABLE_LOGGING) && (ENABLE_LOGGING)
+#define LOGDEBUG(...) LOGINFO(__VA_ARGS__)
+#else
+#define LOGDEBUG(...) do {} while(0)
+#endif
+
 namespace WPEFramework {
 namespace Plugin {
 
@@ -115,19 +121,6 @@ bool USBDeviceImplementation::getUSBDeviceSysfsPath(libusb_device *pDev, string&
     return true;
 }
 
-void USBDeviceImplementation::trimTrailingCharacter(string& value, const char character)
-{
-    const auto end = value.find_last_not_of(character);
-    if (end != std::string::npos)
-    {
-        value.erase(end + 1);
-    }
-    else
-    {
-        value.clear();
-    }
-}
-
 bool USBDeviceImplementation::findBlockDevicePathByUsbAddress(const string& dirPath, const string& deviceName, uint8_t busNumber, uint8_t devAddress, string& devPath)
 {
     bool pathFound = false;
@@ -136,45 +129,52 @@ bool USBDeviceImplementation::findBlockDevicePathByUsbAddress(const string& dirP
 
     if (!findUsbAddressFiles(dirPath, deviceName, busnumPath, devnumPath))
     {
-        LOGERR("Unable to locate busnum/devnum sysfs files for device:[%s]", deviceName.c_str());
+        LOGWARN("Unable to locate busnum/devnum sysfs files for device:[%s]", deviceName.c_str());
         return false;
     }
 
     std::ifstream busnumFile(busnumPath);
-    if (!busnumFile.is_open()){
-        LOGERR("Error opening busnum file:[%s]", busnumPath.c_str());
+    if (!busnumFile.is_open())
+    {
+        LOGWARN("Error opening busnum file:[%s]", busnumPath.c_str());
     }
-    else{
+    else
+    {
         int fileBusNum = -1;
         busnumFile >> fileBusNum;
         if (busnumFile.fail())
         {
-            LOGERR("Error reading busnum file:[%s]", busnumPath.c_str());
+            LOGWARN("Error reading busnum file:[%s]", busnumPath.c_str());
         }
-        else{
+        else
+        {
             if (static_cast<uint8_t>(fileBusNum) != busNumber)
             {
-                LOGERR("fileBusNum [%d], busNumber [%u] does not match for device:[%s]", fileBusNum, busNumber, deviceName.c_str());
+                LOGDEBUG("fileBusNum [%d], busNumber [%u] does not match for device:[%s]", fileBusNum, busNumber, deviceName.c_str());
             }
-            else{
+            else
+            {
                 std::ifstream devnumFile(devnumPath);
                 if (!devnumFile.is_open())
                 {
-                    LOGERR("Error opening devnum file: %s", devnumPath.c_str());
+                    LOGWARN("Error opening devnum file: %s", devnumPath.c_str());
                 }
-                else{
+                else
+                {
                     int fileDevNum = -1;
                     devnumFile >> fileDevNum;
                     if (devnumFile.fail())
                     {
-                        LOGERR("Error reading devnum file: %s", devnumPath.c_str());
+                        LOGWARN("Error reading devnum file: %s", devnumPath.c_str());
                     }
-                    else{
+                    else
+                    {
                         if (static_cast<uint8_t>(fileDevNum) != devAddress)
                         {
-                            LOGERR("fileDevNum [%d], devAddress [%u] does not match for device:[%s]", fileDevNum, devAddress, deviceName.c_str());
+                            LOGDEBUG("fileDevNum [%d], devAddress [%u] does not match for device:[%s]", fileDevNum, devAddress, deviceName.c_str());
                         }
-                        else{
+                        else
+                        {
                             devPath = "/dev/" + deviceName;
                             pathFound = true;
                             LOGINFO("Found matching USB storage device via busnum/devnum. Device path[%s]", devPath.c_str());
@@ -474,59 +474,9 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
             if (string(blockDirEntry->d_name) != "." && string(blockDirEntry->d_name) != "..")
             {
                 string deviceName(blockDirEntry->d_name);
-
                 // Check if the directory name starts with 'sd'
                 if (deviceName.rfind("sd", 0) == 0)
                 {
-                    // Construct the path to the vendor and model file
-                    string vendorPath = dirPath + "/" + deviceName + "/" + PLUGIN_USBDEVICE_VENDOR_PATH;
-                    string modelPath = dirPath + "/" + deviceName + "/" + PLUGIN_USBDEVICE_MODEL_PATH;
-                    string vendorName;
-                    string modelName;
-
-                    // Open the vendor file
-                    std::ifstream vendorFile(vendorPath);
-
-                    if (!vendorFile.is_open())
-                    {
-                        LOGERR("Error opening file: %s", vendorPath.c_str());
-                        continue;
-                    }
-
-                    std::getline(vendorFile, vendorName);
-                    if (vendorFile.fail())
-                    {
-                        LOGERR("Error reading file: %s", vendorPath.c_str());
-                        vendorFile.close();
-                        continue;
-                    }
-
-                    trimTrailingCharacter(vendorName, ' ');
-
-                    vendorFile.close();
-
-                    // Open the model file
-                    std::ifstream modelFile(modelPath);
-
-                    if (!modelFile.is_open())
-                    {
-                        LOGERR("Error opening file: %s", modelPath.c_str());
-                        continue;
-                    }
-
-                    std::getline(modelFile, modelName);
-                    if (modelFile.fail())
-                    {
-                        LOGERR("Error reading file: %s", modelPath.c_str());
-                        modelFile.close();
-                        continue;
-                    }
-
-                    modelFile.close();
-
-                    std::replace(modelName.begin(), modelName.end(), ' ', '_');
-                    trimTrailingCharacter(modelName, '_');
-
                     pathFound = findBlockDevicePathByUsbAddress(dirPath, deviceName, busNumber, devAddress, devPath);
                     if (pathFound)
                     {
