@@ -150,7 +150,7 @@ bool USBDeviceImplementation::findBlockDevicePathByUsbAddress(const string& dirP
         {
             if (static_cast<uint8_t>(fileBusNum) != busNumber)
             {
-                LOGDEBUG("fileBusNum [%d], busNumber [%u] does not match for device:[%s]", fileBusNum, busNumber, deviceName.c_str());
+                LOGDEBUG("fileBusNum [%d], busNumber [%u] does not match for device:[%s]", fileBusNum, (unsigned int)busNumber, deviceName.c_str());
             }
             else
             {
@@ -171,7 +171,7 @@ bool USBDeviceImplementation::findBlockDevicePathByUsbAddress(const string& dirP
                     {
                         if (static_cast<uint8_t>(fileDevNum) != devAddress)
                         {
-                            LOGDEBUG("fileDevNum [%d], devAddress [%u] does not match for device:[%s]", fileDevNum, devAddress, deviceName.c_str());
+                            LOGDEBUG("fileDevNum [%d], devAddress [%u] does not match for device:[%s]", fileDevNum, (unsigned int)devAddress, deviceName.c_str());
                         }
                         else
                         {
@@ -457,7 +457,7 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
 
     // Get the device serial number
     getDeviceSerialNumber(sysfsPath, deviceSerialNumber);
-    LOGINFO("Sysfs Path:[%s], Bus Number:[%u], Device Address:[%u] Serial Number:[%s]", sysfsPath.c_str(), busNumber, devAddress, deviceSerialNumber.c_str());
+    LOGINFO("Sysfs Path:[%s], Bus Number:[%u], Device Address:[%u] Serial Number:[%s]", sysfsPath.c_str(), (unsigned int)busNumber, (unsigned int)devAddress, deviceSerialNumber.c_str());
     dir = opendir(dirPath.c_str());
 
     if (!dir)
