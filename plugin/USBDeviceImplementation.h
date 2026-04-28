@@ -142,7 +142,6 @@ namespace Plugin {
         uint32_t libUSBInit(void);
         void libUSBClose(void);
         bool getUSBDeviceSysfsPath(libusb_device *pDev, string& sysfsPath);
-        void trimTrailingCharacter(string& value, const char character);
         bool findUsbAddressFiles(const string& dirPath, const string& deviceName, string& busnumPath, string& devnumPath);
         bool findBlockDevicePathByUsbAddress(const string& dirPath, const string& deviceName, uint8_t busNumber, uint8_t devAddress, string& devPath);
         void getUSBDevicClassFromInterfaceDescriptor(libusb_device *pDev, uint8_t &bDeviceClass, uint8_t &bDeviceSubClass);
