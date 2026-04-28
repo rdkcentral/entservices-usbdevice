@@ -50,7 +50,7 @@ namespace Plugin {
 
 bool USBDeviceImplementation::findUsbAddressFiles(const string& dirPath, const string& deviceName, string& busnumPath, string& devnumPath)
 {
-	int maxTraversalDepth = 10; // To prevent infinite loops, limit the number of parent directories to traverse
+    int maxTraversalDepth = 10; // To prevent infinite loops, limit the number of parent directories to traverse
     bool result = false;
 
     try
