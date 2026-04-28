@@ -615,8 +615,12 @@ jobs:
           /tmp/bus/usb/devices/101-124/serial
           /tmp/block/sda/device/vendor
           /tmp/block/sda/device/model
+          /tmp/block/sda/device/busnum
+          /tmp/block/sda/device/devnum
           /tmp/block/sdb/device/vendor
           /tmp/block/sdb/device/model
+          /tmp/block/sdb/device/busnum
+          /tmp/block/sdb/device/devnum
           &&
           sudo chmod -R 777
           /opt/rdk_maintenance.conf
@@ -634,9 +638,13 @@ jobs:
           /tmp/bus/usb/devices/100-123/serial
           /tmp/block/sda/device/vendor
           /tmp/block/sda/device/model
+          /tmp/block/sda/device/busnum
+          /tmp/block/sda/device/devnum
           /tmp/bus/usb/devices/101-124/serial
           /tmp/block/sdb/device/vendor
           /tmp/block/sdb/device/model
+          /tmp/block/sdb/device/busnum
+          /tmp/block/sdb/device/devnum
           &&
           cd /dev/disk/by-id/
           &&
