@@ -458,87 +458,85 @@ void USBDeviceImplementation::getDevicePathFromDevice(libusb_device *pDev, strin
     // Get the device serial number
     getDeviceSerialNumber(sysfsPath, deviceSerialNumber);
     LOGINFO("Sysfs Path:[%s], Bus Number:[%u], Device Address:[%u] Serial Number:[%s]", sysfsPath.c_str(), busNumber, devAddress, deviceSerialNumber.c_str());
+    dir = opendir(dirPath.c_str());
+
+    if (!dir)
     {
-        dir = opendir(dirPath.c_str());
+        LOGERR("Error opening directory: %s", dirPath.c_str());
+    }
+    else
+    {
+        // Iterate through directory entries
+        struct dirent* blockDirEntry = nullptr;
 
-        if (!dir)
+        while ((false == pathFound) && (((blockDirEntry = readdir(dir)) != nullptr)))
         {
-            LOGERR("Error opening directory: %s", dirPath.c_str());
-        }
-        else
-        {
-            // Iterate through directory entries
-            struct dirent* blockDirEntry = nullptr;
-
-            while ((false == pathFound) && (((blockDirEntry = readdir(dir)) != nullptr)))
+            if (string(blockDirEntry->d_name) != "." && string(blockDirEntry->d_name) != "..")
             {
-                if (string(blockDirEntry->d_name) != "." && string(blockDirEntry->d_name) != "..")
+                string deviceName(blockDirEntry->d_name);
+
+                // Check if the directory name starts with 'sd'
+                if (deviceName.rfind("sd", 0) == 0)
                 {
-                    string deviceName(blockDirEntry->d_name);
+                    // Construct the path to the vendor and model file
+                    string vendorPath = dirPath + "/" + deviceName + "/" + PLUGIN_USBDEVICE_VENDOR_PATH;
+                    string modelPath = dirPath + "/" + deviceName + "/" + PLUGIN_USBDEVICE_MODEL_PATH;
+                    string vendorName;
+                    string modelName;
 
-                    // Check if the directory name starts with 'sd'
-                    if (deviceName.rfind("sd", 0) == 0)
+                    // Open the vendor file
+                    std::ifstream vendorFile(vendorPath);
+
+                    if (!vendorFile.is_open())
                     {
-                        // Construct the path to the vendor and model file
-                        string vendorPath = dirPath + "/" + deviceName + "/" + PLUGIN_USBDEVICE_VENDOR_PATH;
-                        string modelPath = dirPath + "/" + deviceName + "/" + PLUGIN_USBDEVICE_MODEL_PATH;
-                        string vendorName;
-                        string modelName;
+                        LOGERR("Error opening file: %s", vendorPath.c_str());
+                        continue;
+                    }
 
-                        // Open the vendor file
-                        std::ifstream vendorFile(vendorPath);
-
-                        if (!vendorFile.is_open())
-                        {
-                            LOGERR("Error opening file: %s", vendorPath.c_str());
-                            continue;
-                        }
-
-                        std::getline(vendorFile, vendorName);
-                        if (vendorFile.fail())
-                        {
-                            LOGERR("Error reading file: %s", vendorPath.c_str());
-                            vendorFile.close();
-                            continue;
-                        }
-
-                        trimTrailingCharacter(vendorName, ' ');
-
+                    std::getline(vendorFile, vendorName);
+                    if (vendorFile.fail())
+                    {
+                        LOGERR("Error reading file: %s", vendorPath.c_str());
                         vendorFile.close();
+                        continue;
+                    }
 
-                        // Open the model file
-                        std::ifstream modelFile(modelPath);
+                    trimTrailingCharacter(vendorName, ' ');
 
-                        if (!modelFile.is_open())
-                        {
-                            LOGERR("Error opening file: %s", modelPath.c_str());
-                            continue;
-                        }
+                    vendorFile.close();
 
-                        std::getline(modelFile, modelName);
-                        if (modelFile.fail())
-                        {
-                            LOGERR("Error reading file: %s", modelPath.c_str());
-                            modelFile.close();
-                            continue;
-                        }
+                    // Open the model file
+                    std::ifstream modelFile(modelPath);
 
+                    if (!modelFile.is_open())
+                    {
+                        LOGERR("Error opening file: %s", modelPath.c_str());
+                        continue;
+                    }
+
+                    std::getline(modelFile, modelName);
+                    if (modelFile.fail())
+                    {
+                        LOGERR("Error reading file: %s", modelPath.c_str());
                         modelFile.close();
+                        continue;
+                    }
 
-                        std::replace(modelName.begin(), modelName.end(), ' ', '_');
-                        trimTrailingCharacter(modelName, '_');
+                    modelFile.close();
 
-                        pathFound = findBlockDevicePathByUsbAddress(dirPath, deviceName, busNumber, devAddress, devPath);
-                        if (pathFound)
-                        {
-                            LOGINFO("Found block device path by USB address: %s", devPath.c_str());
-                        }
+                    std::replace(modelName.begin(), modelName.end(), ' ', '_');
+                    trimTrailingCharacter(modelName, '_');
+
+                    pathFound = findBlockDevicePathByUsbAddress(dirPath, deviceName, busNumber, devAddress, devPath);
+                    if (pathFound)
+                    {
+                        LOGINFO("Found block device path by USB address: %s", devPath.c_str());
                     }
                 }
             }
-            // Close the directory
-            closedir(dir);
         }
+        // Close the directory
+        closedir(dir);
     }
 }
 
