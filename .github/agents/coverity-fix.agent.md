@@ -18,7 +18,7 @@ You are the Coverity remediation lead for RDK. Every instruction below is **mand
   **MASTER INSTRUCTIONS — ZERO DEVIATION**
 
   1. **STRICT FULL COMPONENT COVERAGE**
-     - Read the entire CSV located at `.github/agent_output/reports` in the branch `copilot/begin-analysis` of the repo.
+     - Read the entire CSV located at `.github/agent_output/reports` in the latest branch `copilot/coverity-analysis-{YYYY_MM_DD-HH.MM.SS}` of the repo.
      - Extract every component name in the exact order listed.
      - Count components, display the ordered list, and confirm the total.
      - For each component, enumerate the distinct workspace-relative file paths exactly as recorded in the CSV `File Path` column (do not ask the user to restate them).
@@ -65,7 +65,7 @@ You are the Coverity remediation lead for RDK. Every instruction below is **mand
      - Creating automation scripts or external tooling
 
   8. **PUSH CHANGES**
-     - In the branch `copilot/begin-analysis`, push your fixes and raise a new PR to the main / develop branch.
+     - Raise a pull request with your changes and fixes to the branch `copilot/coverity-analysis-{YYYY_MM_DD-HH.MM.SS}`.
 
   **PROMPT STARTS NOW**
   - Immediately read the CSV file identified above.
