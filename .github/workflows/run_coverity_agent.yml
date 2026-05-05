@@ -1,73 +1,107 @@
+name: coverity-scan-weekly
+
 on:
-  # Keep the weekly schedule (you can delete this block if you truly want manual-only)
-  schedule:
-    - cron: "0 0 * * 1" # Mondays 00:00 UTC
+  # schedule:
+  #   - cron: '0 12 * * *'
   workflow_dispatch:
-    inputs:
-      assignee:
-        description: "GitHub username to assign the issue to (e.g., copilot)"
-        required: false
-        default: "copilot"
-      title_prefix:
-        description: "Issue title prefix"
-        required: false
-        default: "Coverity Agent Session (manual test)"
 
 permissions:
-  issues: write
   contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
-  create_weekly_agent_issue:
+  raise-issue-for-weekly-scan:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Create Coverity agent-session issue and assign it
+      - name: Write body and title for issue
+        id: create_issue_body_and_title
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ASSIGNEE: ${{ inputs.assignee || 'copilot' }}
-          TITLE_PREFIX: ${{ inputs.title_prefix || 'Weekly Coverity Agent Session' }}
+          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PYEOF'
+          import base64
+          import os
+          import subprocess
+          import tempfile
+          import yaml
+          
+          title = "Perform Weekly Coverity Scan with Copilot Agent"
+          lines = [
+                "@copilot",
+                "",
+                "/agent coverity-scan",
+                "",
+                f"Please perform a static analysis code scan according to the following instructions.",
+                "",
+                subject_details,
+                "",
+            ]
+            body = "\n".join(lines)
+  
+            max_issue_body_chars = 60000
+            body_len = len(body)
+            if body_len > max_issue_body_chars:
+                raise RuntimeError(
+                    f"Generated issue body is too large ({body_len} chars). "
+                    f"Limit is {max_issue_body_chars}. Reduce embedded prompt content."
+                )
+  
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
+                f.write(body)
+                body_file = f.name
+  
+            out_path = os.environ["GITHUB_OUTPUT"]
+            with open(out_path, "a") as out:
+                out.write(f"title={title}\n")
+                out.write(f"body_file={body_file}\n")
+            PYEOF
+
+      - name: Open Copilot issue to run custom agent
+        id: open_issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
-          DATE="$(date -u +%Y-%m-%d)"
-          TITLE="${TITLE_PREFIX} - ${DATE}"
+          issue_url="$(gh issue create \
+            --repo "$REPO" \
+            --title "${{ steps.create_issue_body_and_title.outputs.title }}" \
+            --body-file "${{ steps.create_issue_body_and_title.outputs.body_file }}")"
 
-          AGENT_MD=".github/agents/coverity-analysis.agent.md"
-          if [ ! -f "$AGENT_MD" ]; then
-            echo "Agent file not found: $AGENT_MD"
-            exit 1
-          fi
+          echo "Created issue: $issue_url"
+          echo "issue_url=$issue_url" >> "$GITHUB_OUTPUT"
 
-          BODY_FILE="$(mktemp)"
-          {
-            echo "Auto-created by GitHub Actions."
-            echo
-            echo "## Agent definition"
-            echo
-            echo "Source: \`$AGENT_MD\`"
-            echo
-            echo "----"
-            cat "$AGENT_MD"
-            echo "----"
-            echo
-            echo "## Run request"
-            echo
-            echo "@copilot Please start an agent session for this repo using the agent definition above and run the Coverity analysis tasks."
-          } > "$BODY_FILE"
-
-          # Create issue and capture number
-          ISSUE_URL="$(gh issue create --repo "${GITHUB_REPOSITORY}" --title "$TITLE" --body-file "$BODY_FILE")"
-          echo "Created: $ISSUE_URL"
-
-          ISSUE_NUMBER="$(echo "$ISSUE_URL" | sed -n 's#.*/issues/\([0-9][0-9]*\)$#\1#p')"
-          if [ -z "$ISSUE_NUMBER" ]; then
-            echo "Failed to parse issue number from URL: $ISSUE_URL"
-            exit 1
-          fi
-
-          # Assign to Copilot (or whatever username you pass as input)
-          gh issue edit "$ISSUE_NUMBER" --repo "${GITHUB_REPOSITORY}" --add-assignee "$ASSIGNEE"
-          echo "Assigned issue #$ISSUE_NUMBER to $ASSIGNEE"
+      - name: Assign issue to Copilot agent
+        id: assign_issue
+        env:
+          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
+          REPO: ${{ github.repository }}
+          ISSUE_URL: ${{ steps.open_issue.outputs.issue_url }}
+        run: |
+           set -euo pipefail
+  
+            if [[ -z "${GH_TOKEN:-}" ]]; then
+              echo "COPILOT_PAT is empty. Add repo secret COPILOT_PAT with a PAT from a user who can assign Copilot agents."
+              exit 1
+            fi
+            
+            issue_number="${ISSUE_URL##*/}"
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$REPO/issues/$issue_number/assignees" \
+              --input - <<< "{
+                \"assignees\": [\"copilot-swe-agent[bot]\"],
+                \"agent_assignment\": {
+                  \"custom_agent\": \"l2-test-guardian\"
+                }
+              }"
+  
+            echo "Assigned issue #$issue_number to Copilot with custom agent coverity-scan"
+  
