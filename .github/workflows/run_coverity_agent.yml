@@ -37,7 +37,7 @@ jobs:
               "",
               f"Please perform a static analysis code scan according to the following instructions.",
               "",
-              subject_details,
+              "subject_details",
               "",
           ]
           body = "\n".join(lines)
