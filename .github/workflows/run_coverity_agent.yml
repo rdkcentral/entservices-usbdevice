@@ -31,15 +31,15 @@ jobs:
           
           title = "Perform Weekly Coverity Scan with Copilot Agent"
           lines = [
-                "@copilot",
-                "",
-                "/agent coverity-scan",
-                "",
-                f"Please perform a static analysis code scan according to the following instructions.",
-                "",
-                subject_details,
-                "",
-            ]
+              "@copilot",
+              "",
+              "/agent coverity-scan",
+              "",
+              f"Please perform a static analysis code scan according to the following instructions.",
+              "",
+              subject_details,
+              "",
+          ]
           body = "\n".join(lines)
 
           max_issue_body_chars = 60000
