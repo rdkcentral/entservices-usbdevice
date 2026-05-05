@@ -40,25 +40,25 @@ jobs:
                 subject_details,
                 "",
             ]
-            body = "\n".join(lines)
-  
-            max_issue_body_chars = 60000
-            body_len = len(body)
-            if body_len > max_issue_body_chars:
-                raise RuntimeError(
-                    f"Generated issue body is too large ({body_len} chars). "
-                    f"Limit is {max_issue_body_chars}. Reduce embedded prompt content."
-                )
-  
-            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
-                f.write(body)
-                body_file = f.name
-  
-            out_path = os.environ["GITHUB_OUTPUT"]
-            with open(out_path, "a") as out:
-                out.write(f"title={title}\n")
-                out.write(f"body_file={body_file}\n")
-            PYEOF
+          body = "\n".join(lines)
+
+          max_issue_body_chars = 60000
+          body_len = len(body)
+          if body_len > max_issue_body_chars:
+              raise RuntimeError(
+                  f"Generated issue body is too large ({body_len} chars). "
+                  f"Limit is {max_issue_body_chars}. Reduce embedded prompt content."
+              )
+
+          with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
+              f.write(body)
+              body_file = f.name
+
+          out_path = os.environ["GITHUB_OUTPUT"]
+          with open(out_path, "a") as out:
+              out.write(f"title={title}\n")
+              out.write(f"body_file={body_file}\n")
+          PYEOF
 
       - name: Open Copilot issue to run custom agent
         id: open_issue
