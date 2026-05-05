@@ -85,23 +85,23 @@ jobs:
         run: |
            set -euo pipefail
   
-            if [[ -z "${GH_TOKEN:-}" ]]; then
-              echo "COPILOT_PAT is empty. Add repo secret COPILOT_PAT with a PAT from a user who can assign Copilot agents."
-              exit 1
-            fi
+           if [[ -z "${GH_TOKEN:-}" ]]; then
+             echo "COPILOT_PAT is empty. Add repo secret COPILOT_PAT with a PAT from a user who can assign Copilot agents."
+             exit 1
+           fi
             
-            issue_number="${ISSUE_URL##*/}"
-            gh api \
-              --method POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/repos/$REPO/issues/$issue_number/assignees" \
-              --input - <<< "{
-                \"assignees\": [\"copilot-swe-agent[bot]\"],
-                \"agent_assignment\": {
-                  \"custom_agent\": \"l2-test-guardian\"
-                }
-              }"
+           issue_number="${ISSUE_URL##*/}"
+           gh api \
+             --method POST \
+             -H "Accept: application/vnd.github+json" \
+             -H "X-GitHub-Api-Version: 2022-11-28" \
+             "/repos/$REPO/issues/$issue_number/assignees" \
+             --input - <<< "{
+               \"assignees\": [\"copilot-swe-agent[bot]\"],
+               \"agent_assignment\": {
+                 \"custom_agent\": \"l2-test-guardian\"
+               }
+             }"
   
-            echo "Assigned issue #$issue_number to Copilot with custom agent coverity-scan"
+           echo "Assigned issue #$issue_number to Copilot with custom agent coverity-scan"
   
