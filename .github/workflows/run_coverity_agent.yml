@@ -13,16 +13,6 @@ jobs:
   raise-issue-for-weekly-scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate required secret
-        env:
-          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo "Missing COPILOT_PAT. Add a repository secret named COPILOT_PAT."
-            exit 1
-          fi
-
       - name: Build unique issue title and body
         id: build_issue
         run: |
@@ -75,7 +65,7 @@ jobs:
       - name: Create issue with labels
         id: create_issue
         env:
-          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -118,7 +108,7 @@ jobs:
 
       - name: Assign issue to generic Copilot agent
         env:
-          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           ISSUE_URL: ${{ steps.create_issue.outputs.issue_url }}
         run: |

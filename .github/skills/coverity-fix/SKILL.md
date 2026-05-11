@@ -4,7 +4,7 @@
 # To make this agent available, merge this file into the default repository branch.
 # For format details, see: https://gh.io/customagents/config
 
-name: fix-coverity-issues
+name: coverity-fix
 description: Use this to fix discovered static analysis / Coverity issues over selected components in the entservices repo. Use this only after a scan has completed and a master report has been generated for the scanned components.
 ---
 
