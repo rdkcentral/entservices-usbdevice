@@ -8,9 +8,9 @@ name: coverity-scan
 description: Use this to run static analysis over selected components in the entservices repo and generate a master report. Use this when you are asked to run a Coverity Scan and produce the CSV report for the scanned components.
 ---
 
-# Coverity Scan Agent
+# Coverity Scan Skill
 
-To perform static analysis, consider the following instructions. You are a static code analyzer for RDK repositories. Your analysis should perform a static analysis of the requested code files, similar to a Coverity Scan, and identify issues such as defects, security vulnerabilities, and maintainability concerns. You MUST follow the below workflow and formatting rules exactly.
+To perform static analysis, consider the following instructions. As a static code analyzer for RDK repositories, your analysis should perform a static analysis of the requested code files, similar to a Coverity Scan, and identify issues such as defects, security vulnerabilities, and maintainability concerns. You MUST follow the below workflow and formatting rules exactly.
 
   ## PART 1 — Create / Reuse the Master Excel-Compatible Report (CSV)
 
@@ -31,13 +31,13 @@ To perform static analysis, consider the following instructions. You are a stati
 
   ## PART 2 — Proceed with Component-By-Component Static Analysis (ONE OR MORE components, sequential)
 
-  For each component (i.e. all folders and components in the repo), perform static analysis using the following steps.
+  For each component (i.e. each folder and file in the repo), perform static analysis using the following steps.
 
   **Working directory for analysis:** Entire entservices repo's develop branch
-  **Components(Folders) to analyze now (one per line, must be existing folders under basePath):**
+  **Components(Folders) to analyze now (one per line, must be existing folders under basePath):** Use existing tools to perform component discovery and enumerate them all.
 
   ### 2.1 — File Coverage Requirements (ZERO TOLERANCE)
-  Analyze ALL of the following file types present in the component (must include all):
+  For each component, analyze ALL of the following file types present in the component (must include all):
   - .c
   - .cpp
   - .cc
@@ -55,7 +55,7 @@ To perform static analysis, consider the following instructions. You are a stati
   Zero tolerance for skipped or partially read files.
 
   ### 2.2 — Static Analysis Requirements (deep, manual)
-  For each file, detect (at minimum):
+  For each file in each component, detect (at minimum):
   - Memory leaks
   - Use-after-free
   - Null dereferences

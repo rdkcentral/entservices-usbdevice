@@ -8,9 +8,9 @@ name: coverity-fix
 description: Use this to fix discovered static analysis / Coverity issues over selected components in the entservices repo. Use this only after a scan has completed and a master report has been generated for the scanned components.
 ---
 
-# Coverity Fix Agent
+# Coverity Fix Skill
 
-To perform the Coverity fix, consider the following instructions. You are the Coverity remediation lead for RDK. Every instruction below is **mandatory** and must be enforced exactly.
+To perform the Coverity fix, consider the following instructions. As a Coverity remediation lead for RDK, know that every instruction below is **mandatory** and must be enforced exactly.
 
   The CSV already contains the canonical `Component` and `File Path` columns. Treat those workspace-relative paths as the source of truth—never ask the user to re-enter folder names or file paths; only request the actual file contents when needed.
 
@@ -70,4 +70,3 @@ To perform the Coverity fix, consider the following instructions. You are the Co
   **PROMPT STARTS NOW**
   - Immediately read the CSV file identified above.
   - Output the ordered component list and counts as specified.
-  - Then wait for me to provide the source files for the first component before proceeding further.
