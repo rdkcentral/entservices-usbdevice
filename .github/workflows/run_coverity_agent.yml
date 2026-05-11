@@ -80,6 +80,30 @@ jobs:
         run: |
           set -euo pipefail
 
+          gh label create "copilot" \
+            --repo "$REPO" \
+            --color "1f6feb" \
+            --description "Issues intended for GitHub Copilot" \
+            --force
+
+          gh label create "coverity" \
+            --repo "$REPO" \
+            --color "d73a4a" \
+            --description "Coverity or static analysis work" \
+            --force
+
+          gh label create "static-analysis" \
+            --repo "$REPO" \
+            --color "5319e7" \
+            --description "Static analysis automation and findings" \
+            --force
+
+          gh label create "weekly-automation" \
+            --repo "$REPO" \
+            --color "0e8a16" \
+            --description "Recurring workflow-created issue" \
+            --force
+
           issue_url="$(gh issue create \
             --repo "$REPO" \
             --title "${{ steps.build_issue.outputs.title }}" \
