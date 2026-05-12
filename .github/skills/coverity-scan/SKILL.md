@@ -16,7 +16,7 @@ To perform static analysis, consider the following instructions. As a static cod
 
   - Create a new branch with the current UTC date and international time named `copilot/coverity-analysis-{YYYY_MM_DD-HH.MM.SS}`, sourced from the `develop` branch, and make your CSV modifications in this new branch.
   - The report MUST be a CSV that opens directly in Excel.
-  - For the creation and modification of the CSV, write the CSV directly; do use a program or Python script to create it.
+  - For the creation and modification of the CSV, write the CSV directly; do not use a program or Python script to create it.
   - Do not use external tools.
 
     **Report Name:** `{repoName}_workspace_static_analysis.csv`
