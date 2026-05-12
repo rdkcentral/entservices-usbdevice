@@ -130,7 +130,7 @@ Once confirmed, proceed to PHASE 2.
 1. Select first component from the list
 2. Extract all rows from CSV where Component Name matches
 3. For each row, you will:
-   - Examine the file at File Path
+   - Examine the entire file at File Path
    - Locate the exact line in Line Number
    - Review Source Code Snippet and Issue Description
    - Implement the Suggested Fix
