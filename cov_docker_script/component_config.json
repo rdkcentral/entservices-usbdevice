@@ -93,6 +93,17 @@
             "rm -f jsonrpc/DTV.json"
           ]
         }
+      },
+      {
+        "name": "entservices-helpers",
+        "repo": "https://github.com/rdkcentral/entservices-helpers.git",
+        "branch": "feature/RDKEMW-16743",
+        "build": {
+          "type": "cmake",
+          "build_dir": "build",
+          "cmake_flags": "-DEXCEPTIONS_ENABLE=ON -DCMAKE_INSTALL_PREFIX=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake",
+          "make_targets": ["all", "install"]
+        }
       }
     ]
   },
@@ -102,8 +113,12 @@
     "name": "entservices-USBDevice",
     "pre_build_commands": [
       {
+        "description": "Create symlink to helper headers",
+        "command": "ln -sfn $BUILD_DIR/entservices-helpers $COMPONENT_DIR/../entservices-helpers && ln -sfn $BUILD_DIR/entservices-helpers $COMPONENT_DIR/entservices-helpers"
+      },
+      {
         "description": "Create symlink to testframework and empty mock headers",
-        "command": "ln -sf $BUILD_DIR/entservices-testframework $COMPONENT_DIR/entservices-testframework && cd $BUILD_DIR/entservices-testframework/Tests && mkdir -p headers/audiocapturemgr headers/ccec/drivers headers/rdk/ds headers/rdk/iarmbus headers/rdk/iarmmgrs-hal headers/rdk/halif/deepsleep-manager headers/network headers/proc && cd headers && touch audiocapturemgr/audiocapturemgr_iarm.h ccec/drivers/CecIARMBusMgr.h rdk/ds/audioOutputPort.hpp rdk/ds/compositeIn.hpp rdk/ds/dsDisplay.h rdk/ds/dsError.h rdk/ds/dsMgr.h rdk/ds/dsTypes.h rdk/ds/dsUtl.h rdk/ds/exception.hpp rdk/ds/hdmiIn.hpp rdk/ds/host.hpp rdk/ds/list.hpp rdk/ds/manager.hpp rdk/ds/sleepMode.hpp rdk/ds/videoDevice.hpp rdk/ds/videoOutputPort.hpp rdk/ds/videoOutputPortConfig.hpp rdk/ds/videoOutputPortType.hpp rdk/ds/videoResolution.hpp rdk/iarmbus/libIARM.h rdk/iarmbus/libIBus.h rdk/iarmbus/libIBusDaemon.h rdk/halif/deepsleep-manager/deepSleepMgr.h rdk/iarmmgrs-hal/mfrMgr.h rdk/iarmmgrs-hal/pwrMgr.h rdk/iarmmgrs-hal/sysMgr.h network/wifiSrvMgrIarmIf.h network/netsrvmgrIarm.h libudev.h rfcapi.h rbus.h telemetry_busmessage_sender.h maintenanceMGR.h pkg.h edid-parser.hpp secure_wrapper.h wpa_ctrl.h proc/readproc.h btmgr.h rdk_logger_milestone.h audioOutputPortType.hpp audioOutputPortConfig.hpp tr181api.h dsRpc.h"
+        "command": "ln -sfn $BUILD_DIR/entservices-testframework $COMPONENT_DIR/../entservices-testframework && ln -sfn $BUILD_DIR/entservices-testframework $COMPONENT_DIR/entservices-testframework && cd $BUILD_DIR/entservices-testframework/Tests && mkdir -p headers/audiocapturemgr headers/ccec/drivers headers/rdk/ds headers/rdk/iarmbus headers/rdk/iarmmgrs-hal headers/rdk/halif/deepsleep-manager headers/network headers/proc && cd headers && touch audiocapturemgr/audiocapturemgr_iarm.h ccec/drivers/CecIARMBusMgr.h rdk/ds/audioOutputPort.hpp rdk/ds/compositeIn.hpp rdk/ds/dsDisplay.h rdk/ds/dsError.h rdk/ds/dsMgr.h rdk/ds/dsTypes.h rdk/ds/dsUtl.h rdk/ds/exception.hpp rdk/ds/hdmiIn.hpp rdk/ds/host.hpp rdk/ds/list.hpp rdk/ds/manager.hpp rdk/ds/sleepMode.hpp rdk/ds/videoDevice.hpp rdk/ds/videoOutputPort.hpp rdk/ds/videoOutputPortConfig.hpp rdk/ds/videoOutputPortType.hpp rdk/ds/videoResolution.hpp rdk/iarmbus/libIARM.h rdk/iarmbus/libIBus.h rdk/iarmbus/libIBusDaemon.h rdk/halif/deepsleep-manager/deepSleepMgr.h rdk/iarmmgrs-hal/mfrMgr.h rdk/iarmmgrs-hal/pwrMgr.h rdk/iarmmgrs-hal/sysMgr.h network/wifiSrvMgrIarmIf.h network/netsrvmgrIarm.h libudev.h rfcapi.h rbus.h telemetry_busmessage_sender.h maintenanceMGR.h pkg.h edid-parser.hpp secure_wrapper.h wpa_ctrl.h proc/readproc.h btmgr.h rdk_logger_milestone.h audioOutputPortType.hpp audioOutputPortConfig.hpp tr181api.h dsRpc.h"
       },
       {
         "description": "Copy system headers (gstreamer, glib, trower-base64)",
