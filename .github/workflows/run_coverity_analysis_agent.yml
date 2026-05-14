@@ -33,16 +33,15 @@ jobs:
             echo "- Trigger time (UTC): ${ts_utc}"
             echo "- Workflow run: ${run_url}"
             echo
-            echo "Use the Coverity analysis subagent configured for this repository and complete this flow:"
-            echo "1. Perform static analysis and generate/update the CSV report in .github/agent_output/reports on a new branch."
+            echo "Use the Coverity analysis and fix subagent configured for this repository and complete this flow:"
+            echo "1. Perform static analysis and generate/update the CSV report in .github/agent_output/reports on the subagent's branch."
             echo "2. Open or update a pull request for that branch with the report changes."
             echo "3. Apply fixes based on report recommendations on the same branch."
             echo "4. Commit remediation updates and refresh the same pull request with a concise summary."
             echo
-            echo "Constraints:"
-            echo "- Use repository-defined instructions and skills."
-            echo "- Preserve public APIs unless explicitly allowed by instructions."
-            echo "- Do not skip required verification or output steps."
+            echo "DO NOT use the coverity-scan nor coverity-fix skills defined in this repository. Use only the custom agent workflow and instructions defined for this specific Coverity analysis and fix flow."
+            echo
+            echo "Once the subagent completes the analysis and fix flow, perform a review of its changes (verify the fixes) and leave comments on the pull request."
           } > "$body_file"
 
           echo "title=$title" >> "$GITHUB_OUTPUT"
@@ -62,12 +61,6 @@ jobs:
             --description "Issues intended for GitHub Copilot" \
             --force
 
-          gh label create "coverity" \
-            --repo "$REPO" \
-            --color "d73a4a" \
-            --description "Coverity or static analysis work" \
-            --force
-
           gh label create "static-analysis" \
             --repo "$REPO" \
             --color "5319e7" \
@@ -85,7 +78,6 @@ jobs:
             --title "${{ steps.build_issue.outputs.title }}" \
             --body-file "${{ steps.build_issue.outputs.body_file }}" \
             --label "copilot" \
-            --label "coverity" \
             --label "static-analysis" \
             --label "weekly-automation")"
 
@@ -94,14 +86,14 @@ jobs:
 
       - name: Assign issue to Coverity analysis custom agent
         env:
-          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
+          GH_TOKEN: ${{ secrets.ASSIGN_COPILOT_ISSUE_PAT }}
           REPO: ${{ github.repository }}
           ISSUE_URL: ${{ steps.create_issue.outputs.issue_url }}
         run: |
           set -euo pipefail
 
           if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo "Missing COPILOT_PAT. Custom agent assignment requires a user token (PAT/OAuth), not GITHUB_TOKEN."
+            echo "Missing ASSIGN_COPILOT_ISSUE_PAT. Custom agent assignment requires a user token (PAT/OAuth), not GITHUB_TOKEN."
             exit 1
           fi
 
@@ -114,4 +106,4 @@ jobs:
             "/repos/$REPO/issues/$issue_number/assignees" \
             --input - <<< '{"assignees":["copilot-swe-agent[bot]"],"agent_assignment":{"custom_agent":"coverity-analysis-and-fix"}}'
 
-          echo "Assigned issue #$issue_number to copilot-swe-agent[bot] with custom agent coverity-analysis-and-fix."
+          echo "Assigned issue #$issue_number to copilot-swe-agent[bot] with custom subagent coverity-analysis-and-fix."

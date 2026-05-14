@@ -1,8 +1,6 @@
-name: Weekly Coverity Static Analysis Scan with Agent Skills
+name: Manual Coverity Static Analysis Scan with Agent Skills
 
 on:
-  schedule:
-    - cron: '0 21 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -10,7 +8,7 @@ permissions:
   issues: write
 
 jobs:
-  raise-issue-for-weekly-scan:
+  raise-issue-for-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Build unique issue title and body
@@ -21,13 +19,13 @@ jobs:
           ts_utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          title="Weekly Coverity Static Analysis Scan with Agent Skills - ${ts_utc}"
+          title="Coverity Static Analysis Scan with Agent Skills - ${ts_utc}"
           body_file="$(mktemp)"
 
           {
             echo "@copilot"
             echo
-            echo "Weekly static analysis task for this repository."
+            echo "Static analysis task for this repository."
             echo
             echo "Run context:"
             echo "- Trigger time (UTC): ${ts_utc}"
@@ -39,14 +37,13 @@ jobs:
             echo
             echo "Required state validation before running the coverity-fix skill:"
             echo "1. Check your action history to verify the coverity-scan skill completed in this issue context."
-            echo "2. Verify that a new branch was created for this run."
-            echo "3. Verify that the analysis CSV exists in that new branch under .github/agent_output/reports."
+            echo "2. Verify that a new branch was created or user branch specified for this run."
+            echo "3. Verify that the analysis CSV exists in that branch under .github/agent_output/reports."
             echo "4. If the branch is missing, run the coverity-scan skill first and complete all of its required outputs."
             echo "5. If the CSV report is missing, but the branch exists, check the coverity-scan skill execution for errors and re-run it until the CSV is generated and committed to the same branch."
-
             echo
             echo "Deliverables:"
-            echo "1. Create a new branch for this weekly run (unique name with UTC date-time)."
+            echo "1. Use the user-specified branch or create a new branch for this run (unique name with UTC date-time)."
             echo "2. Generate or update the CSV analysis report in that branch as required by the coverity-scan skill."
             echo "3. Open or update a pull request for that branch with the CSV/report changes."
             echo "4. After scan prerequisites are satisfied, run the coverity-fix skill and implement code fixes based on CSV recommendations."
@@ -55,7 +52,8 @@ jobs:
             echo
             echo "Constraints:"
             echo "- Use only repository-defined skills and instructions."
-            echo "- Preserve public APIs unless a skill explicitly allows otherwise."
+            echo "- Follow the constraints outlined in those skills."
+            echo "- Do not use any subagents for this task."
             echo "- Do not skip required verification or output steps in either skill."
           } > "$body_file"
 
@@ -76,22 +74,10 @@ jobs:
             --description "Issues intended for GitHub Copilot" \
             --force
 
-          gh label create "coverity" \
-            --repo "$REPO" \
-            --color "d73a4a" \
-            --description "Coverity or static analysis work" \
-            --force
-
           gh label create "static-analysis" \
             --repo "$REPO" \
             --color "5319e7" \
             --description "Static analysis automation and findings" \
-            --force
-
-          gh label create "weekly-automation" \
-            --repo "$REPO" \
-            --color "0e8a16" \
-            --description "Recurring workflow-created issue" \
             --force
 
           issue_url="$(gh issue create \
@@ -99,23 +85,21 @@ jobs:
             --title "${{ steps.build_issue.outputs.title }}" \
             --body-file "${{ steps.build_issue.outputs.body_file }}" \
             --label "copilot" \
-            --label "coverity" \
             --label "static-analysis" \
-            --label "weekly-automation")"
 
           echo "Created issue: $issue_url"
           echo "issue_url=$issue_url" >> "$GITHUB_OUTPUT"
 
       - name: Assign issue to generic Copilot agent
         env:
-          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
+          GH_TOKEN: ${{ secrets.ASSIGN_COPILOT_ISSUE_PAT }}
           REPO: ${{ github.repository }}
           ISSUE_URL: ${{ steps.create_issue.outputs.issue_url }}
         run: |
           set -euo pipefail
 
           if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo "Missing COPILOT_PAT. Agent assignment requires a user token (PAT/OAuth), not GITHUB_TOKEN."
+            echo "Missing ASSIGN_COPILOT_ISSUE_PAT. Agent assignment requires a user token (PAT/OAuth), not GITHUB_TOKEN."
             exit 1
           fi
 
