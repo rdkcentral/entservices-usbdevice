@@ -85,7 +85,7 @@ jobs:
             --title "${{ steps.build_issue.outputs.title }}" \
             --body-file "${{ steps.build_issue.outputs.body_file }}" \
             --label "copilot" \
-            --label "static-analysis" \
+            --label "static-analysis")"
 
           echo "Created issue: $issue_url"
           echo "issue_url=$issue_url" >> "$GITHUB_OUTPUT"
