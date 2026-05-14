@@ -33,7 +33,7 @@ jobs:
             echo "- Trigger time (UTC): ${ts_utc}"
             echo "- Workflow run: ${run_url}"
             echo
-            echo "Use the Coverity analysis and fix subagent configured for this repository and complete this flow:"
+            echo
             echo "1. Perform static analysis and generate/update the CSV report in .github/agent_output/reports on the subagent's branch."
             echo "2. Open or update a pull request for that branch with the report changes."
             echo "3. Apply fixes based on report recommendations on the same branch."
