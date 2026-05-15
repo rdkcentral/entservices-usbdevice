@@ -60,9 +60,9 @@ namespace Utils
 
             // get rid of const for t2_event_s
             char* error = strdup(message.c_str());
-            t2_event_s((char *)"THUNDER_ERROR", error);
             if (error)
             {
+                t2_event_s((char *)"THUNDER_ERROR", error);
                 free(error);
             }
 #endif

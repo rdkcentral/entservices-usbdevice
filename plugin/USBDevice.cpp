@@ -149,7 +149,7 @@ namespace WPEFramework
 
     void USBDevice::Deactivated(RPC::IRemoteConnection* connection)
     {
-        if (connection->Id() == _connectionId)
+        if ((connection != nullptr) && (connection->Id() == _connectionId))
         {
             SYSLOG(Logging::Shutdown, (string(_T("USBDevice Deactivated"))));
             ASSERT(nullptr != _service);
