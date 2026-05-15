@@ -149,6 +149,9 @@ namespace WPEFramework
 
     void USBDevice::Deactivated(RPC::IRemoteConnection* connection)
     {
+        // FIX(Issue 6): Null dereference
+        // Reason: Deactivated callback may receive a null connection pointer.
+        // Impact: Prevents dereferencing null and avoids crash in plugin failure path.
         if ((connection != nullptr) && (connection->Id() == _connectionId))
         {
             SYSLOG(Logging::Shutdown, (string(_T("USBDevice Deactivated"))));
