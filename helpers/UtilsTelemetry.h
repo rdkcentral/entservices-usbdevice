@@ -60,9 +60,7 @@ namespace Utils
 
             // get rid of const for t2_event_s
             char* error = strdup(message.c_str());
-            // FIX(Issue 5): Null dereference
-            // Reason: strdup can fail and return null under memory pressure.
-            // Impact: Avoids passing a null pointer into telemetry API.
+            // FIX(Issue 5): Null dereference. Reason/Impact: guard strdup failure before telemetry call.
             if (error)
             {
                 t2_event_s((char *)"THUNDER_ERROR", error);
