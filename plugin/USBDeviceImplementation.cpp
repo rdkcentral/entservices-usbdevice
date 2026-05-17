@@ -251,14 +251,18 @@ USBDeviceImplementation::USBDeviceImplementation()
 
 USBDeviceImplementation* USBDeviceImplementation::instance(USBDeviceImplementation *USBDeviceImpl)
 {
-   static USBDeviceImplementation *USBDeviceImpl_instance = nullptr;
+   // FIX(Issue 10): Concurrency Race Condition
+   // Reason: The static local pointer was read and written without synchronization, creating a data race
+   //         if hotplug callbacks fire before initialization finishes.
+   // Impact: std::atomic ensures all reads and writes to the instance pointer are safe across threads.
+   static std::atomic<USBDeviceImplementation*> USBDeviceImpl_instance{nullptr};
 
    if (USBDeviceImpl != nullptr)
    {
-      USBDeviceImpl_instance = USBDeviceImpl;
+      USBDeviceImpl_instance.store(USBDeviceImpl, std::memory_order_release);
    }
 
-   return(USBDeviceImpl_instance);
+   return(USBDeviceImpl_instance.load(std::memory_order_acquire));
 }
 
 USBDeviceImplementation::~USBDeviceImplementation()
@@ -313,22 +317,17 @@ uint32_t USBDeviceImplementation::libUSBInit(void)
     {
         _handlingUSBDeviceEvents = true;
 
-        _libUSBDeviceThread = new std::thread(&USBDeviceImplementation::libUSBEventsHandlingThread, USBDeviceImplementation::instance());
+        // FIX(Issue 9): Misleading Construct / FIX(Issue 12): Incorrect Lifetime Handling
+        // Reason: new std::thread throws on failure (never returns nullptr); unique_ptr manages lifetime automatically.
+        // Impact: Removes unreachable nullptr guard; thread lifetime is now exception-safe.
+        _libUSBDeviceThread = std::make_unique<std::thread>(&USBDeviceImplementation::libUSBEventsHandlingThread, USBDeviceImplementation::instance());
 
-        if (nullptr != _libUSBDeviceThread)
-        {
-            LOGINFO("libUSBInit Successed");
-            status = Core::ERROR_NONE;
-        }
-        else
-        {
-            LOGERR("libUSBEventsHandlingThread Failed");
-            _handlingUSBDeviceEvents = false;
-        }
+        LOGINFO("libUSBInit Succeeded");
+        status = Core::ERROR_NONE;
     }
     else
     {
-        LOGINFO("libUSBInit Successed");
+        LOGINFO("libUSBInit Succeeded");
         status = Core::ERROR_NONE;
     }
 
@@ -348,12 +347,10 @@ void USBDeviceImplementation::libUSBClose(void)
         {
             (void)_libUSBDeviceThread->join();
         }
-        delete _libUSBDeviceThread;
-        _libUSBDeviceThread = nullptr;
     }
 
     (void)libusb_exit(NULL);
-    LOGINFO("libUSBClose Successed");
+    LOGINFO("libUSBClose Succeeded");
 }
 
 void USBDeviceImplementation::libUSBEventsHandlingThread(void)
@@ -381,9 +378,19 @@ int USBDeviceImplementation::libUSBHotPlugCallbackDeviceAttached(libusb_context 
 
       ASSERT (nullptr != dev);
 
+      // FIX(Issue 3): Null Dereference
+      // Reason: instance() can return nullptr if the singleton is not yet set; dereferencing it would crash.
+      // Impact: Guard added so both callbacks are safe even if called before/after the implementation lifetime.
+      USBDeviceImplementation* impl = USBDeviceImplementation::instance();
+      if (nullptr == impl)
+      {
+          LOGERR ("USBDeviceImplementation instance is null");
+          return 0;
+      }
+
       if (nullptr != dev)
       {
-          if (Core::ERROR_NONE == USBDeviceImplementation::instance()->getUSBDeviceStructFromDeviceDescriptor(dev, &usbDevice))
+          if (Core::ERROR_NONE == impl->getUSBDeviceStructFromDeviceDescriptor(dev, &usbDevice))
           {
               JsonObject params, device;
 
@@ -400,7 +407,7 @@ int USBDeviceImplementation::libUSBHotPlugCallbackDeviceAttached(libusb_context 
 			  	                       usbDevice.deviceName.c_str(),
 			  	                       usbDevice.devicePath.c_str());
 
-              USBDeviceImplementation::instance()->dispatchEvent(USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED, std::move(usbDevice));
+              impl->dispatchEvent(USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_ARRIVED, std::move(usbDevice));
           }
           else
           {
@@ -425,9 +432,19 @@ int USBDeviceImplementation::libUSBHotPlugCallbackDeviceDetached(libusb_context 
 
       ASSERT (nullptr != dev);
 
+      // FIX(Issue 3): Null Dereference
+      // Reason: instance() can return nullptr if the singleton is not yet set; dereferencing it would crash.
+      // Impact: Guard added so the callback is safe even if called before/after the implementation lifetime.
+      USBDeviceImplementation* impl = USBDeviceImplementation::instance();
+      if (nullptr == impl)
+      {
+          LOGERR ("USBDeviceImplementation instance is null");
+          return 0;
+      }
+
       if (nullptr != dev)
       {
-          if (Core::ERROR_NONE == USBDeviceImplementation::instance()->getUSBDeviceStructFromDeviceDescriptor(dev, &usbDevice))
+          if (Core::ERROR_NONE == impl->getUSBDeviceStructFromDeviceDescriptor(dev, &usbDevice))
           {
               LOGINFO ("usbDevice.deviceClass: %u usbDevice.deviceSubclass:%u usbDevice.deviceName:%s devicePath:%s", 
 			  	                       usbDevice.deviceClass,
@@ -435,7 +452,7 @@ int USBDeviceImplementation::libUSBHotPlugCallbackDeviceDetached(libusb_context 
 			  	                       usbDevice.deviceName.c_str(),
 			  	                       usbDevice.devicePath.c_str());
 
-              USBDeviceImplementation::instance()->dispatchEvent(USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT, std::move(usbDevice));
+              impl->dispatchEvent(USBDeviceImplementation::Event::USBDEVICE_HOTPLUG_EVENT_DEVICE_LEFT, std::move(usbDevice));
           }
           else
           {
@@ -576,6 +593,12 @@ uint32_t USBDeviceImplementation::getUSBDescriptorValue(libusb_device_handle *ha
         retValue = libusb_get_string_descriptor(handle, descriptorIndex, languageID, descBuf, sizeof(descBuf));
         if (retValue < 0)
         {
+            // FIX(Issue 5): Incorrect Error Handling
+            // Reason: LOGERR about libusb_get_string_descriptor was placed outside the inner if/else so it fired
+            //         even when libusb_get_string_descriptor_ascii succeeded (status already Core::ERROR_NONE).
+            // Impact: The error log now only fires when the unicode descriptor fetch fails; the ASCII fallback
+            //         success path no longer emits a spurious error message.
+            LOGERR("languageID: %u, libusb_get_string_descriptor failed: %s", languageID, libusb_strerror((enum libusb_error)retValue));
             retValue = libusb_get_string_descriptor_ascii(handle, descriptorIndex, descBuf, sizeof(descBuf));
             if (retValue < 0) 
             {
@@ -586,7 +609,6 @@ uint32_t USBDeviceImplementation::getUSBDescriptorValue(libusb_device_handle *ha
                 stringDescriptor = string(reinterpret_cast<char*>(descBuf));
                 status = Core::ERROR_NONE;
             }
-            LOGERR("languageID: %u, libusb_get_string_descriptor failed: %s", languageID, libusb_strerror((enum libusb_error)retValue));
         }
         else if (descBuf[1] != LIBUSB_DT_STRING)
         {
@@ -646,107 +668,115 @@ uint32_t USBDeviceImplementation::getUSBExtInfoStructFromDeviceDescriptor(libusb
     {
         LOGERR ("Error libusb_open: %s", libusb_strerror((enum libusb_error)retValue));
     }
+    // FIX(Issue 4): Logic Defect - Inverted condition
+    // Reason: When retValue > 4 we have valid language ID data and should parse the language-ID list.
+    //         The previous code had the language-ID iteration in the else branch (executed when retValue<=4)
+    //         and the languageID=0 fallback in the else-if branch (executed when retValue>4), which is backwards.
+    // Impact: The correct branch now executes for each case, preventing wrong language IDs being used.
     else if (4 < (retValue = libusb_get_string_descriptor(devHandle, 0, 0, (unsigned char*)langBuff, sizeof(langBuff))))
     {
-        LOGINFO("SerialNumber:%d,Manufacturer:%d,Product:%d", pDesc->iSerialNumber,pDesc->iManufacturer,pDesc->iProduct);
-        if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, 0, pDesc->iManufacturer, pUSBDeviceInfo->productInfo1.manufacturer)))
-    {
-            LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
-    }
-        if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, 0, pDesc->iProduct, pUSBDeviceInfo->productInfo1.product)))
-        {
-            LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
-        }
-        if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, 0, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo1.serialNumber)))
-    {
-            LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
-        }
-        LOGERR ("Error libusb_get_string_descriptor: %s", libusb_strerror((enum libusb_error)retValue));
-    }
-    else
-    {
+        // Main path: valid language ID list received; iterate all supported language IDs.
         int devIndex = 2;
 
         pUSBDeviceInfo->numLanguageIds = (langBuff[0] - 2) / 2;
 
         LOGINFO("numLanguageIDs = %d", pUSBDeviceInfo->numLanguageIds);
 
+        // FIX(Issue 6): Logic Defect - status overwritten by sequential calls
+        // Reason: Assigning status from each getUSBDescriptorValue call means a failure in the first call
+        //         is masked if subsequent calls succeed. Using a local result variable preserves failures.
+        // Impact: Any individual descriptor retrieval failure now correctly sets the overall status to error.
+        // Initialize to success at branch entry; any failing call will set status to the error code.
+        status = Core::ERROR_NONE;
         for (int languageCount = 0; languageCount< pUSBDeviceInfo->numLanguageIds; ++languageCount)
         {
+            uint32_t callStatus = Core::ERROR_NONE;
             if (0 == languageCount)
             {
                 pUSBDeviceInfo->productInfo1.languageId = (uint16_t)((uint16_t)(langBuff[devIndex]) | (uint16_t)((uint16_t)(langBuff[devIndex + 1]) << 8));
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo1.languageId, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo1.serialNumber)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo1.languageId, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo1.serialNumber)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue serialNumber (status=%u)", callStatus);
+                    status = callStatus;
                 }
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo1.languageId, pDesc->iManufacturer, pUSBDeviceInfo->productInfo1.manufacturer)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo1.languageId, pDesc->iManufacturer, pUSBDeviceInfo->productInfo1.manufacturer)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue manufacturer (status=%u)", callStatus);
+                    status = callStatus;
                 }
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo1.languageId, pDesc->iProduct, pUSBDeviceInfo->productInfo1.product)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo1.languageId, pDesc->iProduct, pUSBDeviceInfo->productInfo1.product)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue product (status=%u)", callStatus);
+                    status = callStatus;
                 }
             }
 	      else if (1 == languageCount)
 	      {
                 pUSBDeviceInfo->productInfo2.languageId = (uint16_t)((uint16_t)(langBuff[devIndex]) | (uint16_t)((uint16_t)(langBuff[devIndex + 1]) << 8));
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo2.languageId, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo2.serialNumber)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo2.languageId, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo2.serialNumber)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue serialNumber (status=%u)", callStatus);
+                    status = callStatus;
                 }
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo2.languageId, pDesc->iManufacturer, pUSBDeviceInfo->productInfo2.manufacturer)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo2.languageId, pDesc->iManufacturer, pUSBDeviceInfo->productInfo2.manufacturer)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue manufacturer (status=%u)", callStatus);
+                    status = callStatus;
                 }
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo2.languageId, pDesc->iProduct, pUSBDeviceInfo->productInfo2.product)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo2.languageId, pDesc->iProduct, pUSBDeviceInfo->productInfo2.product)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue product (status=%u)", callStatus);
+                    status = callStatus;
                 }
             }
     	      else if (2 == languageCount)
 	      {
                 pUSBDeviceInfo->productInfo3.languageId = (uint16_t)((uint16_t)(langBuff[devIndex]) | (uint16_t)((uint16_t)(langBuff[devIndex + 1]) << 8));
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo3.languageId, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo3.serialNumber)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo3.languageId, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo3.serialNumber)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue serialNumber (status=%u)", callStatus);
+                    status = callStatus;
                 }
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo3.languageId, pDesc->iManufacturer, pUSBDeviceInfo->productInfo3.manufacturer)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo3.languageId, pDesc->iManufacturer, pUSBDeviceInfo->productInfo3.manufacturer)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue manufacturer (status=%u)", callStatus);
+                    status = callStatus;
                 }
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo3.languageId, pDesc->iProduct, pUSBDeviceInfo->productInfo3.product)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo3.languageId, pDesc->iProduct, pUSBDeviceInfo->productInfo3.product)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue product (status=%u)", callStatus);
+                    status = callStatus;
                 }
     	      }
     	      else if (3 == languageCount)
 	      {
                 pUSBDeviceInfo->productInfo4.languageId = (uint16_t)((uint16_t)(langBuff[devIndex]) | (uint16_t)((uint16_t)(langBuff[devIndex + 1]) << 8));
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo4.languageId, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo4.serialNumber)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo4.languageId, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo4.serialNumber)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue serialNumber (status=%u)", callStatus);
+                    status = callStatus;
                 }
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo4.languageId, pDesc->iManufacturer, pUSBDeviceInfo->productInfo4.manufacturer)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo4.languageId, pDesc->iManufacturer, pUSBDeviceInfo->productInfo4.manufacturer)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue manufacturer (status=%u)", callStatus);
+                    status = callStatus;
                 }
         
-                if (Core::ERROR_NONE != (status = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo4.languageId, pDesc->iProduct, pUSBDeviceInfo->productInfo4.product)))
+                if (Core::ERROR_NONE != (callStatus = getUSBDescriptorValue(devHandle, pUSBDeviceInfo->productInfo4.languageId, pDesc->iProduct, pUSBDeviceInfo->productInfo4.product)))
                 {
-                    LOGERR ("Error getUSBDescriptorValue: %s", libusb_strerror((enum libusb_error)retValue));
+                    LOGERR ("Error getUSBDescriptorValue product (status=%u)", callStatus);
+                    status = callStatus;
                 }
     	      }
 	      else
@@ -755,7 +785,36 @@ uint32_t USBDeviceImplementation::getUSBExtInfoStructFromDeviceDescriptor(libusb
 	      }
             devIndex += 2; // Move to the next language ID
         }
+    }
+    else
+    {
+        // Fallback path: could not retrieve language ID list; use languageID=0 for basic descriptor fetch.
+        // FIX(Issue 4): Logic Defect - this was previously the else-if (4 < retValue) branch (inverted).
+        // FIX(Issue 5): Incorrect Error Handling - LOGERR about libusb_get_string_descriptor is only logged here
+        //               (in the actual failure/fallback path) rather than after the ASCII success path.
+        LOGERR ("Error libusb_get_string_descriptor: %s; falling back to languageID=0", libusb_strerror((enum libusb_error)retValue));
+        LOGINFO("SerialNumber:%d,Manufacturer:%d,Product:%d", pDesc->iSerialNumber,pDesc->iManufacturer,pDesc->iProduct);
+
+        // FIX(Issue 6): Logic Defect - use local result variable to preserve any individual failure.
+        // Using a distinct name (fallbackStatus) to avoid confusion with the loop's callStatus above.
+        // Initialize status to success; any failing call will override it with the error code.
         status = Core::ERROR_NONE;
+        uint32_t fallbackStatus = Core::ERROR_NONE;
+        if (Core::ERROR_NONE != (fallbackStatus = getUSBDescriptorValue(devHandle, 0, pDesc->iManufacturer, pUSBDeviceInfo->productInfo1.manufacturer)))
+        {
+            LOGERR ("Error getUSBDescriptorValue manufacturer (status=%u)", fallbackStatus);
+            status = fallbackStatus;
+        }
+        if (Core::ERROR_NONE != (fallbackStatus = getUSBDescriptorValue(devHandle, 0, pDesc->iProduct, pUSBDeviceInfo->productInfo1.product)))
+        {
+            LOGERR ("Error getUSBDescriptorValue product (status=%u)", fallbackStatus);
+            status = fallbackStatus;
+        }
+        if (Core::ERROR_NONE != (fallbackStatus = getUSBDescriptorValue(devHandle, 0, pDesc->iSerialNumber, pUSBDeviceInfo->productInfo1.serialNumber)))
+        {
+            LOGERR ("Error getUSBDescriptorValue serialNumber (status=%u)", fallbackStatus);
+            status = fallbackStatus;
+        }
     }
 
     if (devHandle)
@@ -817,6 +876,9 @@ uint32_t USBDeviceImplementation::getUSBDeviceInfoStructFromDeviceDescriptor(lib
             pUSBDeviceInfo->protocol = desc.bDeviceProtocol;
             pUSBDeviceInfo->busSpeed = (Exchange::IUSBDevice::USBDeviceSpeed)libusb_get_device_speed(pDev);
 
+            // FIX(Issue 1): Resource Leak
+            // Reason: libusb_get_active_config_descriptor allocates config_desc; it must always be freed with libusb_free_config_descriptor.
+            // Impact: Previously config_desc was never freed, leaking memory on every call. Now it is freed after use in the success branch.
             if (LIBUSB_SUCCESS == (retValue = libusb_get_active_config_descriptor ( pDev, &config_desc )))
             {
                 if (config_desc->bmAttributes & LIBUSB_CONFIG_ATT_SELF_POWERED )
@@ -829,6 +891,8 @@ uint32_t USBDeviceImplementation::getUSBDeviceInfoStructFromDeviceDescriptor(lib
                     pUSBDeviceInfo->deviceStatus = WPEFramework::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_ACTIVE;
                 }
                 LOGINFO("bmAttributes: %u",config_desc->bmAttributes);
+                libusb_free_config_descriptor(config_desc);
+                config_desc = nullptr;
             }
             else
             {
@@ -1093,9 +1157,22 @@ Core::hresult USBDeviceImplementation::GetDeviceList(IUSBDeviceIterator*& device
             devices = (Core::Service<RPC::IteratorType<Exchange::IUSBDevice::IUSBDeviceIterator>>::Create<Exchange::IUSBDevice::IUSBDeviceIterator>(usbDeviceList));
         }
     }
+    // FIX(Issue 7): Incorrect Error Handling
+    // Reason: libusb_get_device_list returns a negative value on error; previously both devCount==0
+    //         and devCount<0 fell into the same else branch returning Core::ERROR_NONE and masking errors.
+    // Impact: libusb errors are now surfaced; only devCount==0 (no devices) returns success.
+    else if (devCount < 0)
+    {
+        LOGERR("libusb_get_device_list failed: %s", libusb_strerror((enum libusb_error)devCount));
+        status = Core::ERROR_GENERAL;
+    }
+    // FIX(Issue 8): Incorrect Error Handling
+    // Reason: When devCount==0, devices output parameter was left uninitialized while returning ERROR_NONE.
+    // Impact: devices is now explicitly set to nullptr so callers always receive a defined value.
     else
     {
         LOGWARN("USBDevice Not found");
+        devices = nullptr;
         status = Core::ERROR_NONE;
     }
 
@@ -1160,6 +1237,14 @@ Core::hresult USBDeviceImplementation::GetDeviceInfo(const string &deviceName, U
             }
         }
         libusb_free_device_list(devs, 1);
+    }
+    // FIX(Issue 7): Incorrect Error Handling
+    // Reason: devCount<0 indicates a libusb error that was previously treated as "no devices found".
+    // Impact: libusb errors are now surfaced with an error log; only devCount==0 logs a warning.
+    else if (devCount < 0)
+    {
+        LOGERR("libusb_get_device_list failed: %s", libusb_strerror((enum libusb_error)devCount));
+        status = Core::ERROR_GENERAL;
     }
     else
     {
@@ -1246,6 +1331,14 @@ Core::hresult USBDeviceImplementation::BindDriver(const string &deviceName) cons
 
         libusb_free_device_list(devs, 1);
     }
+    // FIX(Issue 7): Incorrect Error Handling (BindDriver)
+    // Reason: devCount<0 from libusb_get_device_list indicates an error, not "no devices".
+    // Impact: libusb errors are now properly reported rather than silently treated as "not found".
+    else if (devCount < 0)
+    {
+        LOGERR("libusb_get_device_list failed: %s", libusb_strerror((enum libusb_error)devCount));
+        status = Core::ERROR_GENERAL;
+    }
     else
     {
         LOGWARN("USBDevice Not found");
@@ -1330,6 +1423,14 @@ Core::hresult USBDeviceImplementation::UnbindDriver(const string &deviceName) co
         }
 
         libusb_free_device_list(devs, 1);
+    }
+    // FIX(Issue 7): Incorrect Error Handling (UnbindDriver)
+    // Reason: devCount<0 from libusb_get_device_list indicates an error, not "no devices".
+    // Impact: libusb errors are now properly reported rather than silently treated as "not found".
+    else if (devCount < 0)
+    {
+        LOGERR("libusb_get_device_list failed: %s", libusb_strerror((enum libusb_error)devCount));
+        status = Core::ERROR_GENERAL;
     }
     else
     {
