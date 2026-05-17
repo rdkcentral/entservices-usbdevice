@@ -28,7 +28,11 @@ using namespace std;
 
 namespace Utils
 {
-auto MoveFile(
+// FIX(Issue 11): Coding Guideline Violation
+// Reason: Function definitions in header files without the inline keyword cause multiple-definition
+//         linker errors when the header is included in more than one translation unit.
+// Impact: Adding inline ensures that including the header in multiple TUs is safe and link-error-free.
+inline auto MoveFile(
     const string &from,
     const string &to) -> bool
 {
@@ -89,7 +93,10 @@ auto MoveFile(
 * @param[out] res_str - The last non empty line from the input string
 * @return whether or not a non empty line was found
 */
-bool getLastLine(const std::string& input, std::string& res_str)
+// FIX(Issue 11): Coding Guideline Violation (continued)
+// Reason: getLastLine also defined in header without inline; same multiple-definition risk.
+// Impact: Adding inline makes the function safe to include from multiple translation units.
+inline bool getLastLine(const std::string& input, std::string& res_str)
 {
     string read_line = "";
     bool ret_value = false;

@@ -25,6 +25,7 @@
 #include "tracing/Logging.h"
 #include <vector>
 #include <thread>
+#include <atomic>
 #include <fstream>
 #include <com/com.h>
 #include <core/core.h>
@@ -159,9 +160,15 @@ namespace Plugin {
 
     private:
         mutable Core::CriticalSection _adminLock;
-        std::thread *_libUSBDeviceThread;
+        // FIX(Issue 12): Incorrect Lifetime Handling
+        // Reason: Raw owning pointer replaced with unique_ptr to prevent leaks on exception paths.
+        // Impact: Thread object lifetime is now automatically managed; no manual delete required.
+        std::unique_ptr<std::thread> _libUSBDeviceThread;
         std::list<Exchange::IUSBDevice::INotification*> _usbDeviceNotification;
-        bool _handlingUSBDeviceEvents;
+        // FIX(Issue 2): Concurrency Race Condition
+        // Reason: _handlingUSBDeviceEvents is read by the event thread and written by the main thread without synchronization.
+        // Impact: Using std::atomic<bool> ensures all cross-thread accesses are safe without additional locking.
+        std::atomic<bool> _handlingUSBDeviceEvents;
         libusb_hotplug_callback_handle _hotPlugHandle[2];
 
         friend class Job;
