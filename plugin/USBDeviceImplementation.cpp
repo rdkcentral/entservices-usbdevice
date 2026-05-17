@@ -320,14 +320,14 @@ uint32_t USBDeviceImplementation::libUSBInit(void)
         // FIX(Issue 9): Misleading Construct / FIX(Issue 12): Incorrect Lifetime Handling
         // Reason: new std::thread throws on failure (never returns nullptr); unique_ptr manages lifetime automatically.
         // Impact: Removes unreachable nullptr guard; thread lifetime is now exception-safe.
-        _libUSBDeviceThread = std::unique_ptr<std::thread>(new std::thread(&USBDeviceImplementation::libUSBEventsHandlingThread, USBDeviceImplementation::instance()));
+        _libUSBDeviceThread = std::make_unique<std::thread>(&USBDeviceImplementation::libUSBEventsHandlingThread, USBDeviceImplementation::instance());
 
-        LOGINFO("libUSBInit Successed");
+        LOGINFO("libUSBInit Succeeded");
         status = Core::ERROR_NONE;
     }
     else
     {
-        LOGINFO("libUSBInit Successed");
+        LOGINFO("libUSBInit Succeeded");
         status = Core::ERROR_NONE;
     }
 
@@ -347,14 +347,10 @@ void USBDeviceImplementation::libUSBClose(void)
         {
             (void)_libUSBDeviceThread->join();
         }
-        // FIX(Issue 12): Incorrect Lifetime Handling
-        // Reason: unique_ptr replaces raw pointer; reset() frees the thread object safely.
-        // Impact: No manual delete needed; avoids potential double-free or leak.
-        _libUSBDeviceThread.reset();
     }
 
     (void)libusb_exit(NULL);
-    LOGINFO("libUSBClose Successed");
+    LOGINFO("libUSBClose Succeeded");
 }
 
 void USBDeviceImplementation::libUSBEventsHandlingThread(void)
@@ -690,6 +686,8 @@ uint32_t USBDeviceImplementation::getUSBExtInfoStructFromDeviceDescriptor(libusb
         // Reason: Assigning status from each getUSBDescriptorValue call means a failure in the first call
         //         is masked if subsequent calls succeed. Using a local result variable preserves failures.
         // Impact: Any individual descriptor retrieval failure now correctly sets the overall status to error.
+        // Initialize to success at branch entry; any failing call will set status to the error code.
+        status = Core::ERROR_NONE;
         for (int languageCount = 0; languageCount< pUSBDeviceInfo->numLanguageIds; ++languageCount)
         {
             uint32_t callStatus = Core::ERROR_NONE;
@@ -787,12 +785,6 @@ uint32_t USBDeviceImplementation::getUSBExtInfoStructFromDeviceDescriptor(libusb
 	      }
             devIndex += 2; // Move to the next language ID
         }
-        // status remains Core::ERROR_GENERAL only if no individual call set it to an error;
-        // in that case all calls succeeded so mark overall success.
-        if (Core::ERROR_GENERAL == status)
-        {
-            status = Core::ERROR_NONE;
-        }
     }
     else
     {
@@ -805,6 +797,8 @@ uint32_t USBDeviceImplementation::getUSBExtInfoStructFromDeviceDescriptor(libusb
 
         // FIX(Issue 6): Logic Defect - use local result variable to preserve any individual failure.
         // Using a distinct name (fallbackStatus) to avoid confusion with the loop's callStatus above.
+        // Initialize status to success; any failing call will override it with the error code.
+        status = Core::ERROR_NONE;
         uint32_t fallbackStatus = Core::ERROR_NONE;
         if (Core::ERROR_NONE != (fallbackStatus = getUSBDescriptorValue(devHandle, 0, pDesc->iManufacturer, pUSBDeviceInfo->productInfo1.manufacturer)))
         {
@@ -820,10 +814,6 @@ uint32_t USBDeviceImplementation::getUSBExtInfoStructFromDeviceDescriptor(libusb
         {
             LOGERR ("Error getUSBDescriptorValue serialNumber (status=%u)", fallbackStatus);
             status = fallbackStatus;
-        }
-        if (Core::ERROR_GENERAL == status)
-        {
-            status = Core::ERROR_NONE;
         }
     }
 
