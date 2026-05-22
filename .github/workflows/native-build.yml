@@ -34,5 +34,3 @@ jobs:
           ./build_tools_workflows/cov_docker_script/setup_dependencies.sh ./cov_docker_script/component_config.json
           chmod +x build_tools_workflows/cov_docker_script/build_native.sh
           ./build_tools_workflows/cov_docker_script/build_native.sh ./cov_docker_script/component_config.json "$(pwd)"
-        env:
-          GITHUB_TOKEN: ${{ secrets.RDKCM_RDKE }}
