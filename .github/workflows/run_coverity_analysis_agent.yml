@@ -1,0 +1,109 @@
+name: Weekly Coverity Static Analysis with Custom Agent
+
+on:
+  schedule:
+    - cron: '0 21 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  raise-issue-for-weekly-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build unique issue title and body
+        id: build_issue
+        run: |
+          set -euo pipefail
+
+          ts_utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          title="Weekly Coverity Static Analysis Scan with Custom Agent - ${ts_utc}"
+          body_file="$(mktemp)"
+
+          {
+            echo "@copilot"
+            echo
+            echo "Weekly static analysis task for this repository."
+            echo
+            echo "Run context:"
+            echo "- Trigger time (UTC): ${ts_utc}"
+            echo "- Workflow run: ${run_url}"
+            echo
+            echo
+            echo "1. Perform static analysis and generate/update the CSV report in .github/agent_output/reports on the subagent's branch."
+            echo "2. Open or update a pull request for that branch with the report changes."
+            echo "3. Apply fixes based on report recommendations on the same branch."
+            echo "4. Commit remediation updates and refresh the same pull request with a concise summary."
+            echo
+            echo "DO NOT use the coverity-scan nor coverity-fix skills defined in this repository. Use only the custom agent workflow and instructions defined for this specific Coverity analysis and fix flow."
+            echo
+            echo "Once the subagent completes the analysis and fix flow, perform a review of its changes (verify the fixes) and leave comments on the pull request."
+          } > "$body_file"
+
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+          echo "body_file=$body_file" >> "$GITHUB_OUTPUT"
+
+      - name: Create issue with labels
+        id: create_issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          gh label create "copilot" \
+            --repo "$REPO" \
+            --color "1f6feb" \
+            --description "Issues intended for GitHub Copilot" \
+            --force
+
+          gh label create "static-analysis" \
+            --repo "$REPO" \
+            --color "5319e7" \
+            --description "Static analysis automation and findings" \
+            --force
+
+          gh label create "weekly-automation" \
+            --repo "$REPO" \
+            --color "0e8a16" \
+            --description "Recurring workflow-created issue" \
+            --force
+
+          issue_url="$(gh issue create \
+            --repo "$REPO" \
+            --title "${{ steps.build_issue.outputs.title }}" \
+            --body-file "${{ steps.build_issue.outputs.body_file }}" \
+            --label "copilot" \
+            --label "static-analysis" \
+            --label "weekly-automation")"
+
+          echo "Created issue: $issue_url"
+          echo "issue_url=$issue_url" >> "$GITHUB_OUTPUT"
+
+      - name: Assign issue to Coverity analysis custom agent
+        env:
+          GH_TOKEN: ${{ secrets.ASSIGN_COPILOT_ISSUE_PAT }}
+          REPO: ${{ github.repository }}
+          ISSUE_URL: ${{ steps.create_issue.outputs.issue_url }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "Missing ASSIGN_COPILOT_ISSUE_PAT. Custom agent assignment requires a user token (PAT/OAuth), not GITHUB_TOKEN."
+            exit 1
+          fi
+
+          issue_number="${ISSUE_URL##*/}"
+
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/$REPO/issues/$issue_number/assignees" \
+            --input - <<< '{"assignees":["copilot-swe-agent[bot]"],"agent_assignment":{"custom_agent":"coverity-analysis-and-fix"}}'
+
+          echo "Assigned issue #$issue_number to copilot-swe-agent[bot] with custom subagent coverity-analysis-and-fix."

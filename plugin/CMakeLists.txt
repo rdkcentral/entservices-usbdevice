@@ -28,6 +28,7 @@ find_package(${NAMESPACE}Plugins REQUIRED)
 find_package(${NAMESPACE}Definitions REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
+find_package(${NAMESPACE}Helpers REQUIRED)
 
 if (NOT RDK_SERVICE_L2_TEST AND NOT RDK_SERVICES_L1_TEST)
     find_package(PkgConfig REQUIRED)
@@ -46,7 +47,8 @@ target_link_libraries(${MODULE_NAME}
     PRIVATE
         CompileSettingsDebug::CompileSettingsDebug
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-        ${NAMESPACE}Definitions::${NAMESPACE}Definitions)
+        ${NAMESPACE}Definitions::${NAMESPACE}Definitions
+        ${NAMESPACE}::${NAMESPACE}Helpers)
 
 if (NOT RDK_SERVICE_L2_TEST AND NOT RDK_SERVICES_L1_TEST)
     target_link_libraries(${MODULE_NAME}
@@ -60,8 +62,6 @@ install(TARGETS ${MODULE_NAME}
 add_library(${PLUGIN_IMPLEMENTATION} SHARED
     USBDeviceImplementation.cpp
     Module.cpp)
-
-include_directories(../helpers)
 
 if (NOT RDK_SERVICE_L2_TEST AND NOT RDK_SERVICES_L1_TEST)
     include_directories(${LIBUSB_INCLUDE_DIRS})
@@ -77,7 +77,8 @@ target_link_libraries(${PLUGIN_IMPLEMENTATION}
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         ${LIBUSB_LIBRARIES}
         ${Boost_SYSTEM_LIBRARY}
-        ${Boost_FILESYSTEM_LIBRARY})
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${NAMESPACE}::${NAMESPACE}Helpers)
 
 if (NOT RDK_SERVICE_L2_TEST AND NOT RDK_SERVICES_L1_TEST)
     target_link_libraries(${PLUGIN_IMPLEMENTATION}
