@@ -100,7 +100,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-usbdevice
           path: entservices-usbdevice
-          ref: feature/RDKEMW-16743
+          ref: develop
          
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
