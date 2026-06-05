@@ -32,7 +32,7 @@ set (TEST_LIB
     ${NAMESPACE}Plugins::${NAMESPACE}Plugins
 )
 
-set (TEST_INC ../../helpers)
+set (TEST_INC)
 
 #########################################################################################
 # add_plugin_test_ex: Macro to add plugin tests, it will append to TEST_SRC, TEST_INC,
@@ -102,7 +102,7 @@ macro(add_plugin_test plugin_name test_files)
 endmacro()
 
 # PLUGIN_USBDEVICE
-set (USBDEVICE_INC ${CMAKE_SOURCE_DIR}/plugin ${CMAKE_SOURCE_DIR}/helpers)
+set (USBDEVICE_INC ${CMAKE_SOURCE_DIR}/plugin ${CMAKE_SOURCE_DIR}/../entservices-helpers/helpers)
 set (USBDEVICE_LIBS ${NAMESPACE}USBDevice ${NAMESPACE}USBDeviceImplementation)
 add_plugin_test_ex(PLUGIN_USBDEVICE tests/test_USBDevice.cpp "${USBDEVICE_INC}" "${USBDEVICE_LIBS}")
 
