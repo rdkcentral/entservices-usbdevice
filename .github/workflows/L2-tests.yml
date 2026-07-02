@@ -114,18 +114,6 @@ jobs:
           path: googletest
           ref: v1.15.0
 
-      # Fetching only the required essos-resmgr.h file from the Westeros repo to avoid full repo clone and to remove header file dependency
-      - name: Fetch only essos-resmgr.h from Westeros repo using sparse-checkout
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/westeros-minimal
-          cd $GITHUB_WORKSPACE/westeros-minimal
-          git init
-          git remote add origin https://code.rdkcentral.com/r/components/opensource/westeros
-          git config core.sparseCheckout true
-          git pull --depth=1 origin master
-          mkdir -p $GITHUB_WORKSPACE/entservices-usbdevice/ResourceManager
-          cp essos/essos-resmgr.h $GITHUB_WORKSPACE/entservices-usbdevice/ResourceManager/
-
       - name: Apply patches ThunderTools
         run: |  
           cd $GITHUB_WORKSPACE/ThunderTools
