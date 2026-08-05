@@ -83,7 +83,7 @@
       {
         "name": "entservices-apis",
         "repo": "https://github.com/rdkcentral/entservices-apis.git",
-        "branch": "main",
+        "branch": "4.0.8",
         "build": {
           "type": "cmake",
           "build_dir": "build",
