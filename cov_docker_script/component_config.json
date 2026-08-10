@@ -32,7 +32,6 @@
           {
             "file": ".",
             "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/00010-R4.4-Add-support-for-project-dir.patch"
           }
         ],
         "build": {
@@ -50,27 +49,6 @@
           {
             "file": ".",
             "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/error_code_R4_4.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/1004-Add-support-for-project-dir.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/RDKEMW-733-Add-ENTOS-IDS.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/Jsonrpc_dynamic_error_handling.patch"
           }
         ],
         "build": {
