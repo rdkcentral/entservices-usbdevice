@@ -9,7 +9,7 @@
       {
         "name": "entservices-testframework",
         "repo": "https://github.com/rdkcentral/entservices-testframework.git",
-        "branch": "develop"
+        "branch": "2.0.0"
       },
       {
         "name": "trower-base64",
@@ -27,7 +27,7 @@
       {
         "name": "ThunderTools",
         "repo": "https://github.com/rdkcentral/ThunderTools.git",
-        "branch": "R4.4.3",
+        "branch": "R4_4-RDK",
         "source_patches": [
           {
             "file": ".",
@@ -45,7 +45,7 @@
       {
         "name": "Thunder",
         "repo": "https://github.com/rdkcentral/Thunder.git",
-        "branch": "R4.4.1",
+        "branch": "R4_4-RDK",
         "source_patches": [
           {
             "file": ".",
