@@ -9,7 +9,7 @@
       {
         "name": "entservices-testframework",
         "repo": "https://github.com/rdkcentral/entservices-testframework.git",
-        "branch": "develop"
+        "branch": "2.0.0"
       },
       {
         "name": "trower-base64",
@@ -27,14 +27,7 @@
       {
         "name": "ThunderTools",
         "repo": "https://github.com/rdkcentral/ThunderTools.git",
-        "branch": "R4.4.3",
-        "source_patches": [
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/00010-R4.4-Add-support-for-project-dir.patch"
-          }
-        ],
+        "branch": "R4_4-RDK",
         "build": {
           "type": "cmake",
           "build_dir": "build",
@@ -45,34 +38,7 @@
       {
         "name": "Thunder",
         "repo": "https://github.com/rdkcentral/Thunder.git",
-        "branch": "R4.4.1",
-        "source_patches": [
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/Use_Legact_Alt_Based_On_ThunderTools_R4.4.3.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/error_code_R4_4.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/1004-Add-support-for-project-dir.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/RDKEMW-733-Add-ENTOS-IDS.patch"
-          },
-          {
-            "file": ".",
-            "type": "patch_file",
-            "patch_file": "$BUILD_DIR/entservices-testframework/patches/Jsonrpc_dynamic_error_handling.patch"
-          }
-        ],
+        "branch": "R4_4-RDK",
         "build": {
           "type": "cmake",
           "build_dir": "build",
@@ -83,7 +49,7 @@
       {
         "name": "entservices-apis",
         "repo": "https://github.com/rdkcentral/entservices-apis.git",
-        "branch": "4.0.8",
+        "branch": "main",
         "build": {
           "type": "cmake",
           "build_dir": "build",
@@ -128,7 +94,7 @@
     "build": {
       "type": "cmake",
       "build_dir": "build",
-      "cmake_flags": "-DUSE_THUNDER_R4=ON -DCMAKE_INSTALL_PREFIX=$COMPONENT_DIR/install/usr -DCMAKE_PREFIX_PATH=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_DISABLE_FIND_PACKAGE_IARMBus=ON -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON -DCMAKE_DISABLE_FIND_PACKAGE_DS=ON -DCOMCAST_CONFIG=OFF -DRDK_SERVICES_COVERITY=ON -DRDK_SERVICES_L1_TEST=ON -DDS_FOUND=ON -DPLUGIN_USBDEVICE=ON -DCMAKE_CXX_FLAGS=\"-DEXCEPTIONS_ENABLE=ON -I$COMPONENT_DIR/entservices-testframework/Tests/headers -I$COMPONENT_DIR/entservices-testframework/Tests/headers/audiocapturemgr -I$COMPONENT_DIR/entservices-testframework/Tests/headers/rdk/ds -I$COMPONENT_DIR/entservices-testframework/Tests/headers/rdk/iarmbus -I$COMPONENT_DIR/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal -I$COMPONENT_DIR/entservices-testframework/Tests/headers/ccec/drivers -I$COMPONENT_DIR/entservices-testframework/Tests/headers/network -I$COMPONENT_DIR/entservices-testframework/Tests/mocks -I$COMPONENT_DIR/entservices-testframework/Tests/mocks/libusb -I$COMPONENT_DIR/entservices-testframework/Tests/mocks/thunder -I/usr/include/libdrm -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/devicesettings.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/Iarm.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/Rfc.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/RBus.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/Telemetry.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/Udev.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/pkg.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/maintenanceMGR.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/secure_wrappermock.h -Wall -Werror -Wno-error=format -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS -DENABLE_SYSTEM_GET_STORE_DEMO_LINK -DENABLE_DEEP_SLEEP -DENABLE_SET_WAKEUP_SRC_CONFIG -DENABLE_THERMAL_PROTECTION -DUSE_DRM_SCREENCAPTURE -DHAS_API_SYSTEM -DHAS_API_POWERSTATE -DHAS_RBUS -DDISABLE_SECURITY_TOKEN -DENABLE_DEVICE_MANUFACTURER_INFO -DUSE_THUNDER_R4=ON -DTHUNDER_VERSION=4 -DTHUNDER_VERSION_MAJOR=4 -DTHUNDER_VERSION_MINOR=4\"",
+      "cmake_flags": "-DUSE_THUNDER_R4=ON -DCMAKE_INSTALL_PREFIX=$COMPONENT_DIR/install/usr -DCMAKE_PREFIX_PATH=$HOME/usr -DCMAKE_MODULE_PATH=$HOME/usr/tools/cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_DISABLE_FIND_PACKAGE_IARMBus=ON -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON -DCMAKE_DISABLE_FIND_PACKAGE_DS=ON -DCOMCAST_CONFIG=OFF -DRDK_SERVICES_COVERITY=ON -DRDK_SERVICES_L1_TEST=ON -DDS_FOUND=ON -DPLUGIN_USBDEVICE=ON -DCMAKE_CXX_FLAGS=\"-DEXCEPTIONS_ENABLE=ON -I$COMPONENT_DIR/entservices-testframework/Tests/headers -I$COMPONENT_DIR/entservices-testframework/Tests/headers/audiocapturemgr -I$COMPONENT_DIR/entservices-testframework/Tests/headers/rdk/ds -I$COMPONENT_DIR/entservices-testframework/Tests/headers/rdk/iarmbus -I$COMPONENT_DIR/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal -I$COMPONENT_DIR/entservices-testframework/Tests/headers/ccec/drivers -I$COMPONENT_DIR/entservices-testframework/Tests/headers/network -I$COMPONENT_DIR/entservices-testframework/Tests/mocks -I$COMPONENT_DIR/entservices-testframework/Tests/mocks/libusb -I$COMPONENT_DIR/entservices-testframework/Tests/mocks/thunder -I/usr/include/libdrm -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/devicesettings.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/Iarm.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/Rfc.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/RBus.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/Telemetry.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/Udev.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/pkg.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/maintenanceMGR.h -include $COMPONENT_DIR/entservices-testframework/Tests/mocks/secure_wrappermock.h -Wall -Werror -Wno-error=format -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS -DENABLE_SYSTEM_GET_STORE_DEMO_LINK -DENABLE_DEEP_SLEEP -DENABLE_SET_WAKEUP_SRC_CONFIG -DENABLE_THERMAL_PROTECTION -DUSE_DRM_SCREENCAPTURE -DHAS_API_SYSTEM -DHAS_API_POWERSTATE -DHAS_RBUS -DDISABLE_SECURITY_TOKEN -DENABLE_DEVICE_MANUFACTURER_INFO -DTHUNDER_VERSION=4 -DTHUNDER_VERSION_MAJOR=4 -DTHUNDER_VERSION_MINOR=4\"",
       "parallel_make": true
     }
   }
