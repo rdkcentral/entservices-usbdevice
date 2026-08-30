@@ -65,7 +65,7 @@
 *   D7 is reserved and must be set to one for historical reasons.
 */
 #define LIBUSB_CONFIG_ATT_SELF_POWERED        0x40
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
     class USBDeviceImplementation : public Exchange::IUSBDevice{
     public:
@@ -112,11 +112,7 @@ namespace Plugin {
 
        public:
             static Core::ProxyType<Core::IDispatch> Create(USBDeviceImplementation *usbDeviceImplementation, Event event, Exchange::IUSBDevice::USBDevice usbDevice) {
-#ifndef USE_THUNDER_R4
-                return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(usbDeviceImplementation, event, usbDevice)));
-#else
                 return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(usbDeviceImplementation, event, usbDevice)));
-#endif
             }
 
             virtual void Dispatch() {
@@ -167,4 +163,4 @@ namespace Plugin {
         friend class Job;
     };
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

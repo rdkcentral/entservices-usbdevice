@@ -52,7 +52,7 @@
 #define LOGDEBUG(...) do {} while(0)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
 // findUsbAddressFiles
@@ -821,18 +821,18 @@ uint32_t USBDeviceImplementation::getUSBDeviceInfoStructFromDeviceDescriptor(lib
             {
                 if (config_desc->bmAttributes & LIBUSB_CONFIG_ATT_SELF_POWERED )
                 {
-                    pUSBDeviceInfo->deviceStatus = WPEFramework::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_SELF_POWERED | \
-                                        WPEFramework::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_ACTIVE;
+                    pUSBDeviceInfo->deviceStatus = Thunder::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_SELF_POWERED | \
+                                        Thunder::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_ACTIVE;
                 }
                 else
                 {
-                    pUSBDeviceInfo->deviceStatus = WPEFramework::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_ACTIVE;
+                    pUSBDeviceInfo->deviceStatus = Thunder::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_ACTIVE;
                 }
                 LOGINFO("bmAttributes: %u",config_desc->bmAttributes);
             }
             else
             {
-                pUSBDeviceInfo->deviceStatus = WPEFramework::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_NO_DEVICE_CONNECTED;
+                pUSBDeviceInfo->deviceStatus = Thunder::Exchange::IUSBDevice::USBDeviceStatus::DEVICE_STATUS_NO_DEVICE_CONNECTED;
                 LOGERR("Error libusb_get_active_config_descriptor: %s", libusb_strerror((enum libusb_error)retValue));
             }
             if (Core::ERROR_NONE != (status = getUSBExtInfoStructFromDeviceDescriptor(pDev, &desc, pUSBDeviceInfo)))
@@ -1340,4 +1340,4 @@ Core::hresult USBDeviceImplementation::UnbindDriver(const string &deviceName) co
     return status;
 }
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder
