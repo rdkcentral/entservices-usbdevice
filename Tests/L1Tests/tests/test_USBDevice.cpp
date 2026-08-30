@@ -38,7 +38,7 @@
 #define TEST_LOG(x, ...) fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" x "\n\033[0m", __FILE__, __LINE__, __FUNCTION__, getpid(), gettid(), ##__VA_ARGS__); fflush(stderr);
 
 using ::testing::NiceMock;
-using namespace WPEFramework;
+using namespace Thunder;
 
 #define MOCK_USB_DEVICE_BUS_NUMBER_1    100
 #define MOCK_USB_DEVICE_ADDRESS_1       001
@@ -90,7 +90,6 @@ protected:
                         return &comLinkMock;
                     }));
 
-#ifdef USE_THUNDER_R4
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
 			.WillByDefault(::testing::Invoke(
                   [&](const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) {
@@ -98,10 +97,6 @@ protected:
                         TEST_LOG("Pass created USBDeviceImpl: %p &USBDeviceImpl: %p", USBDeviceImpl, &USBDeviceImpl);
                         return &USBDeviceImpl;
                     }));
-#else
-	  ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-	    .WillByDefault(::testing::Return(USBDeviceImpl));
-#endif /*USE_THUNDER_R4 */
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
 

@@ -114,7 +114,7 @@ endif (RDK_SERVICES_L1_TEST)
 
 include_directories(${TEST_INC})
 
-target_link_directories(${MODULE_NAME} PUBLIC ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/lib/wpeframework/plugins)
+target_link_directories(${MODULE_NAME} PUBLIC ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/lib/thunder/plugins)
 
 target_link_libraries(${MODULE_NAME} ${TEST_LIB})
 

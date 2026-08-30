@@ -46,9 +46,9 @@
 #define MOCK_USB_DEVICE_MANUFACTURER "USB"
 #define MOCK_USB_DEVICE_PRODUCT "SanDisk 3.2Gen1"
 using ::testing::NiceMock;
-using namespace WPEFramework;
+using namespace Thunder;
 using testing::StrictMock;
-using ::WPEFramework::Exchange::IUSBDevice;
+using ::Thunder::Exchange::IUSBDevice;
 
 typedef enum : uint32_t {
     USBDevice_onDevicePluggedIn = 0x00000001,
@@ -77,7 +77,7 @@ class USBDeviceNotificationHandler : public Exchange::IUSBDevice::INotification 
         /** @brief Event signalled flag */
         uint32_t m_event_signalled;
 
-        WPEFramework::Exchange::IUSBDevice::USBDevice m_usb_device;
+        Thunder::Exchange::IUSBDevice::USBDevice m_usb_device;
 
         BEGIN_INTERFACE_MAP(Notification)
         INTERFACE_ENTRY(Exchange::IUSBDevice::INotification)
