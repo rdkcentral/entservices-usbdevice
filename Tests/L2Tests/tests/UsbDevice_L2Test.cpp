@@ -454,7 +454,7 @@ MATCHER_P(MatchRequestStatus, data, "")
 */
 TEST_F(USBDeviceTest, devicePluggedInAndPluggedOut)
 {
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
 
@@ -571,7 +571,7 @@ TEST_F(USBDeviceTest, devicePluggedInAndPluggedOut)
 TEST_F(USBDeviceTest, getDeviceListUsingWithSingleMassStorageUSBComRpcConnectionSuccessCase)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::IUSBDeviceIterator* devices = nullptr;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
@@ -801,7 +801,7 @@ TEST_F(USBDeviceTest, getDeviceListUsingWithSingleMassStorageUSBComRpcConnection
 TEST_F(USBDeviceTest, getDeviceListUsingWithMultipleMassStorageUSBComRpcConnectionSuccessCase)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::IUSBDeviceIterator* devices = nullptr;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
@@ -1044,7 +1044,7 @@ TEST_F(USBDeviceTest, getDeviceListUsingWithMultipleMassStorageUSBComRpcConnecti
 TEST_F(USBDeviceTest, bindDriverComRpcConnectionSuccessCase)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
     Exchange::IUSBDevice::USBDevice actual_usbDevice_dev_list = {0};
@@ -1256,7 +1256,7 @@ TEST_F(USBDeviceTest, bindDriverComRpcConnectionSuccessCase)
 TEST_F(USBDeviceTest, unbindDriverComRpcConnectionSuccessCase)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
     Exchange::IUSBDevice::USBDevice actual_usbDevice_dev_list = {0};
@@ -1464,7 +1464,7 @@ TEST_F(USBDeviceTest, unbindDriverComRpcConnectionSuccessCase)
 TEST_F(USBDeviceTest, getDeviceInfoComRpcConnectionSuccessCase)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
     struct libusb_config_descriptor *temp_config_desc = nullptr;
@@ -1721,7 +1721,7 @@ TEST_F(USBDeviceTest, getDeviceInfoComRpcConnectionSuccessCase)
 TEST_F(USBDeviceTest, getDeviceInfoComRpcConnectionSuccessCase_ascii)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
     struct libusb_config_descriptor *temp_config_desc = nullptr;
@@ -1969,7 +1969,7 @@ TEST_F(USBDeviceTest, getDeviceInfoComRpcConnectionSuccessCase_ascii)
 TEST_F(USBDeviceTest, getDeviceInfoComRpcConnection_libusb_strerror)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
     struct libusb_config_descriptor *temp_config_desc = nullptr;
@@ -2194,7 +2194,7 @@ TEST_F(USBDeviceTest, getDeviceInfoComRpcConnection_libusb_strerror)
 TEST_F(USBDeviceTest, getDeviceInfoComRpcConnection_InterfaceDescriptor)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    Core::Sink<USBDeviceNotificationHandler> notification;
+    Core::SinkType<USBDeviceNotificationHandler> notification;
     uint32_t signalled = USBDevice_StateInvalid;
     Exchange::IUSBDevice::USBDevice actual_usbDevice = {0};
     struct libusb_config_descriptor *temp_config_desc = nullptr;

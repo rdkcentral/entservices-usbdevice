@@ -109,7 +109,7 @@ namespace Plugin {
             PluginHost::IShell* _service{};
             uint32_t _connectionId{};
             Exchange::IUSBDevice* _usbDeviceImpl{};
-            Core::Sink<Notification> _usbDeviceNotification;
+            Core::SinkType<Notification> _usbDeviceNotification;
     };
 
 } // namespace Plugin
