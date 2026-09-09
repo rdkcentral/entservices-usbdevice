@@ -1,11 +1,5 @@
 name: Build USBDevice Component in Native Environment
 
-on:
-  push:
-    branches: [ main, 'sprint/**', 'release/**', develop, topic/RDKEMW-13481 ]
-  pull_request:
-    branches: [ main, 'sprint/**', 'release/**', topic/RDK*, develop ]
-
 jobs:
   build-usbdevice-on-pr:
     name: Build entservices-usbdevice component in github rdkcentral

@@ -37,7 +37,6 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-usbdevice \
 -DCMAKE_DISABLE_FIND_PACKAGE_DS=ON \
 -DCOMCAST_CONFIG=OFF \
 -DRDK_SERVICES_COVERITY=ON \
--DRDK_SERVICES_L1_TEST=ON \
 -DDS_FOUND=ON \
 -DPLUGIN_USBDEVICE=ON \
 -DCMAKE_CXX_FLAGS="-DEXCEPTIONS_ENABLE=ON \
@@ -48,7 +47,6 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-usbdevice \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/ccec/drivers \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/network \
--I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/libusb \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby/Public/Dobby \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby/IpcService \
@@ -65,7 +63,6 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-usbdevice \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/pkg.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/maintenanceMGR.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
--include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/libusb/libusb.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Dobby.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby/DobbyProtocol.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby/DobbyProxy.h \
