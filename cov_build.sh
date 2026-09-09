@@ -47,7 +47,6 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-usbdevice \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/ccec/drivers \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/network \
--I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/libusb \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby/Public/Dobby \
 -I ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby/IpcService \
@@ -64,7 +63,6 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-usbdevice \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/pkg.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/maintenanceMGR.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
--include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/libusb/libusb.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Dobby.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby/DobbyProtocol.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/headers/Dobby/DobbyProxy.h \
