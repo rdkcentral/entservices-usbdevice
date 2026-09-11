@@ -222,7 +222,7 @@ touch Dobby/IpcService/IpcFactory.h
 echo "files created successfully"
 echo "======================================================================================"
 
-###############################################
+############################
 # Create libusb compatibility wrapper and stubs
 mkdir -p $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/libusb
 cd $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/libusb
@@ -246,8 +246,11 @@ static inline int libusb_init_context(libusb_context **ctx, const struct libusb_
 EOF
 
 echo "Created libusb compatibility wrapper at $PWD/libusb.h"
+cd $GITHUB_WORKSPACE
 
-cd ../../
+############################
+# Copy remaining system headers
+cd $GITHUB_WORKSPACE/entservices-testframework/Tests/headers
 cp -r /usr/include/gstreamer-1.0/gst /usr/include/glib-2.0/* /usr/lib/x86_64-linux-gnu/glib-2.0/include/* /usr/local/include/trower-base64/base64.h .
 
 ls -la ${GITHUB_WORKSPACE}
