@@ -56,7 +56,7 @@ cmake -G Ninja -S "$GITHUB_WORKSPACE" -B build/entservices-usbdevice \
 -I /usr/include/libdrm \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/devicesettings.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Iarm.h \
--include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/libusb/libusb.h \
+-include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/libusb_compat.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Rfc.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/RBus.h \
 -include ${GITHUB_WORKSPACE}/entservices-testframework/Tests/mocks/Telemetry.h \
