@@ -139,7 +139,7 @@ cmake -G Ninja -S ../entservices-helpers -B build/entservices-helpers \
     -DEXCEPTIONS_ENABLE=ON \
     -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr" \
     -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake" \
-    "-DCMAKE_CXX_FLAGS=-I$GITHUB_WORKSPACE/entservices-testframework/Tests/mocks -I$GITHUB_WORKSPACE/entservices-testframework/Tests/headers -I$GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/iarmbus -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Iarm.h -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/libusb/libusb.h "
+    "-DCMAKE_CXX_FLAGS=-I$GITHUB_WORKSPACE/entservices-testframework/Tests/mocks -I$GITHUB_WORKSPACE/entservices-testframework/Tests/headers -I$GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/iarmbus -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Iarm.h -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/libusb/libusb_compat.h "
 cmake --build build/entservices-helpers --target install
 
 ############################
