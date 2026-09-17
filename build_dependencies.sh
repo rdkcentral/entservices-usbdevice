@@ -30,7 +30,7 @@ cd ${GITHUB_WORKSPACE}
 #1. Install Dependencies and packages
 
 apt update
-apt install -y libsqlite3-dev libcurl4-openssl-dev valgrind lcov clang libsystemd-dev libboost-all-dev libwebsocketpp-dev meson libcunit1 libcunit1-dev curl protobuf-compiler-grpc libgrpc-dev libgrpc++-dev libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+apt install -y libsqlite3-dev libcurl4-openssl-dev valgrind lcov clang libsystemd-dev libboost-all-dev libwebsocketpp-dev meson libcunit1 libcunit1-dev curl protobuf-compiler-grpc libgrpc-dev libgrpc++-dev libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libusb-1.0-0-dev
 pip install jsonref
 
 ############################
@@ -63,7 +63,7 @@ cd ..
 git clone --branch develop https://github.com/rdkcentral/entservices-helpers.git
 cd "$GITHUB_WORKSPACE"
 
-git clone --branch 2.0.0 https://github.com/rdkcentral/entservices-testframework.git
+git clone --branch feature/RDKEMW-23188 https://github.com/rdkcentral/entservices-testframework.git
 
 ############################
 # Build Thunder-Tools
@@ -139,7 +139,7 @@ cmake -G Ninja -S ../entservices-helpers -B build/entservices-helpers \
     -DEXCEPTIONS_ENABLE=ON \
     -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr" \
     -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake" \
-    "-DCMAKE_CXX_FLAGS=-I$GITHUB_WORKSPACE/entservices-testframework/Tests/mocks -I$GITHUB_WORKSPACE/entservices-testframework/Tests/headers -I$GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/iarmbus -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Iarm.h "
+    "-DCMAKE_CXX_FLAGS=-I$GITHUB_WORKSPACE/entservices-testframework/Tests/mocks -I$GITHUB_WORKSPACE/entservices-testframework/Tests/headers -I$GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/iarmbus -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Iarm.h -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/libusb/libusb_compat.h "
 cmake --build build/entservices-helpers --target install
 
 ############################
