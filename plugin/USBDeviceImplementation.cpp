@@ -1318,7 +1318,6 @@ Core::hresult USBDeviceImplementation::UnbindDriver(const string &deviceName) co
                         {
                             status = Core::ERROR_NONE;
                             LOGINFO("Kernel driver successfully detached");
-							LOGWARN("Kernel driver connected");
                         }
                     }
 
