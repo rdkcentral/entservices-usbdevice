@@ -1333,7 +1333,7 @@ Core::hresult USBDeviceImplementation::UnbindDriver(const string &deviceName) co
     }
     else
     {
-        LOGWARN("USBDevice Not found");
+        LOGWARN("Error occured:USBDevice Not found");
     }
     _adminLock.Unlock();
 
